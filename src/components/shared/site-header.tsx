@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, QrCode, Search, LogIn } from "lucide-react";
+import { CalendarDays, CalendarPlus, LayoutDashboard, LogIn, QrCode, Search } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { UserMenu } from "@/components/ui/user-menu";
 import { UserRole } from "@/generated/prisma/enums";
@@ -27,10 +27,20 @@ export const SiteHeader = async () => {
           </Link>
           
           {session?.user?.role === UserRole.ORGANIZER && (
-            <Link href="/organizer/check-in" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
-              <QrCode className="h-4 w-4" aria-hidden="true" />
-              Scan Tiket
-            </Link>
+            <>
+              <Link href="/organizer/dashboard" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
+                <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+                Dashboard
+              </Link>
+              <Link href="/organizer/events/new" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
+                <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+                Buat Event
+              </Link>
+              <Link href="/organizer/check-in" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
+                <QrCode className="h-4 w-4" aria-hidden="true" />
+                Scan Tiket
+              </Link>
+            </>
           )}
 
           {session?.user ? (
