@@ -3,8 +3,11 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
+import { isHoneypotFilled, stripHtmlTags } from "@/lib/sanitize";
+import { registrationLimiter } from "@/lib/rate-limiter";
 import type { Prisma } from "@/generated/prisma/client";
 import { RegistrationStatus, UserRole } from "@/generated/prisma/enums";
 
@@ -13,6 +16,7 @@ export type TicketDetail = {
   ticketCode: string;
   status: string;
   checkedIn: boolean;
+  checkedInAt: Date | null;
   createdAt: Date;
   eventPrice: string;
   attendeeName: string;
@@ -51,11 +55,28 @@ const createTicketCode = (slug: string) => {
   return `EVT-${prefix}-${randomUUID().slice(0, 8).toUpperCase()}`;
 };
 
+/**
+ * Ambil identifier client untuk rate limiting.
+ */
+const getClientIdentifier = async (): Promise<string> => {
+  try {
+    const headerStore = await headers();
+    return (
+      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      headerStore.get("x-real-ip") ??
+      "unknown-client"
+    );
+  } catch {
+    return "unknown-client";
+  }
+};
+
 const ticketSelect = {
   id: true,
   ticketCode: true,
   status: true,
   checkedIn: true,
+  checkedInAt: true,
   createdAt: true,
   user: {
     select: {
@@ -89,6 +110,7 @@ const mapTicket = (ticket: TicketWithRelations): TicketDetail => ({
   ticketCode: ticket.ticketCode,
   status: ticket.status,
   checkedIn: ticket.checkedIn,
+  checkedInAt: ticket.checkedInAt,
   createdAt: ticket.createdAt,
   eventPrice: ticket.event.price.toString(),
   attendeeName: ticket.user.name,
@@ -102,43 +124,60 @@ const mapTicket = (ticket: TicketWithRelations): TicketDetail => ({
 });
 
 export const registerForEvent = async (formData: FormData) => {
+  // ── Honeypot Check (Anti-Bot) ───────────────────────────────────
+  // Field "website" sengaja disembunyikan di UI.
+  // Hanya bot otomatis yang mengisinya. Jika terisi → tolak silently.
+  if (isHoneypotFilled(formData)) {
+    throw new Error("Registrasi tidak dapat diproses.");
+  }
+
   const eventId = normalizeText(formData.get("eventId"));
-  const attendeeName = normalizeText(formData.get("name"));
+  const attendeeName = stripHtmlTags(normalizeText(formData.get("name")));
   const attendeeEmail = normalizeText(formData.get("email")).toLowerCase();
 
   if (!eventId || !attendeeName || !isValidEmail(attendeeEmail)) {
     throw new Error("Nama dan email valid wajib diisi.");
   }
 
+  // ── Rate Limiting (Anti-Spam) ───────────────────────────────────
+  // Max 10 registrasi per 15 menit per IP.
+  const clientId = await getClientIdentifier();
+  const rateLimitKey = `registration:${clientId}`;
+  const rateCheck = registrationLimiter.check(rateLimitKey);
+
+  if (!rateCheck.allowed) {
+    throw new Error(
+      "Terlalu banyak percobaan pendaftaran. Coba lagi dalam beberapa menit.",
+    );
+  }
+
   const prisma = getPrisma();
   const ticketCode = await prisma.$transaction(async (tx) => {
-    const event = await tx.event.findUnique({
-      where: {
-        id: eventId,
-      },
-      select: {
-        id: true,
-        slug: true,
-        price: true,
-        capacity: true,
-        registrations: {
-          where: {
-            status: {
-              not: RegistrationStatus.CANCELLED,
-            },
-          },
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
+    // ── Race Condition Fix (Atomic Capacity Check) ────────────────
+    // Menggunakan row-level locking via SELECT ... FOR UPDATE
+    // agar hanya satu request yang bisa memproses kapasitas event
+    // pada satu waktu. Ini mencegah overbooking saat concurrent.
+    const lockedEvents = await tx.$queryRaw<
+      Array<{ id: string; slug: string; price: string; capacity: number }>
+    >`SELECT id, slug, price::text, capacity FROM events WHERE id = ${eventId}::uuid FOR UPDATE`;
+
+    const event = lockedEvents[0];
 
     if (!event) {
       throw new Error("Event tidak ditemukan.");
     }
 
-    if (event.registrations.length >= event.capacity) {
+    // Hitung registrasi aktif (non-CANCELLED)
+    const activeCount = await tx.registration.count({
+      where: {
+        eventId,
+        status: {
+          not: RegistrationStatus.CANCELLED,
+        },
+      },
+    });
+
+    if (activeCount >= event.capacity) {
       throw new Error("Kapasitas event sudah penuh.");
     }
 
@@ -173,12 +212,15 @@ export const registerForEvent = async (formData: FormData) => {
       return existingRegistration;
     }
 
+    const eventPrice = Number(event.price);
+    const isFree = eventPrice === 0 || Number.isNaN(eventPrice);
+
     const registration = await tx.registration.create({
       data: {
         userId: user.id,
         eventId,
         ticketCode: createTicketCode(event.slug),
-        status: event.price.equals(0) ? RegistrationStatus.PAID : RegistrationStatus.PENDING,
+        status: isFree ? RegistrationStatus.PAID : RegistrationStatus.PENDING,
       },
       select: {
         ticketCode: true,
@@ -277,6 +319,32 @@ export const payRegistration = async (formData: FormData) => {
   }
 
   const prisma = getPrisma();
+
+  // ── Payment Hardening ───────────────────────────────────────────
+  // Cek status tiket sebelum mengubah ke PAID.
+  // Hanya tiket PENDING yang boleh dibayar.
+  // Ini mencegah double-payment atau pembayaran tiket CANCELLED.
+  const ticket = await prisma.registration.findUnique({
+    where: {
+      ticketCode,
+    },
+    select: {
+      status: true,
+    },
+  });
+
+  if (!ticket) {
+    throw new Error("Tiket tidak ditemukan.");
+  }
+
+  if (ticket.status !== RegistrationStatus.PENDING) {
+    throw new Error(
+      ticket.status === RegistrationStatus.PAID
+        ? "Tiket sudah dibayar sebelumnya."
+        : "Tiket sudah dibatalkan dan tidak bisa dibayar.",
+    );
+  }
+
   await prisma.registration.update({
     where: {
       ticketCode,
@@ -311,6 +379,7 @@ export const checkInTicket = async (formData: FormData) => {
       ticketCode: true,
       status: true,
       checkedIn: true,
+      checkedInAt: true,
     },
   });
 
@@ -323,15 +392,24 @@ export const checkInTicket = async (formData: FormData) => {
   }
 
   if (ticket.checkedIn) {
-    redirect(`/organizer/check-in?result=duplicate&code=${encodeURIComponent(ticketCode)}`);
+    // Sertakan timestamp check-in sebelumnya agar Organizer tahu
+    // kapan tiket ini terakhir kali digunakan.
+    const checkedInTime = ticket.checkedInAt
+      ? `&time=${encodeURIComponent(ticket.checkedInAt.toISOString())}`
+      : "";
+    redirect(
+      `/organizer/check-in?result=duplicate&code=${encodeURIComponent(ticketCode)}${checkedInTime}`,
+    );
   }
 
+  // ── Simpan timestamp check-in ─────────────────────────────────
   await prisma.registration.update({
     where: {
       ticketCode,
     },
     data: {
       checkedIn: true,
+      checkedInAt: new Date(),
     },
   });
 

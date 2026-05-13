@@ -13,12 +13,30 @@ type CheckInPageProps = {
     result?: string;
     code?: string;
     auth?: string;
+    time?: string;
   }>;
 };
 
 export const dynamic = "force-dynamic";
 
-const getResultCopy = (result?: string) => {
+const formatCheckedInTime = (isoTime?: string): string => {
+  if (!isoTime) {
+    return "";
+  }
+
+  try {
+    const date = new Date(isoTime);
+
+    return ` Check-in sebelumnya pada: ${new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "long",
+      timeStyle: "medium",
+    }).format(date)}.`;
+  } catch {
+    return "";
+  }
+};
+
+const getResultCopy = (result?: string, checkedInTime?: string) => {
   if (result === "success") {
     return {
       title: "Check-in berhasil",
@@ -28,10 +46,12 @@ const getResultCopy = (result?: string) => {
   }
 
   if (result === "duplicate") {
+    const timeInfo = formatCheckedInTime(checkedInTime);
+
     return {
-      title: "Tiket sudah pernah check-in",
-      description: "Kode ini valid, tetapi peserta sudah ditandai hadir sebelumnya.",
-      className: "border-amber-200 bg-amber-50 text-amber-950",
+      title: "⚠️ TIKET SUDAH DIGUNAKAN",
+      description: `Kode ini valid, tetapi peserta sudah ditandai hadir sebelumnya.${timeInfo} Kemungkinan QR code dibagikan ke orang lain.`,
+      className: "border-rose-300 bg-rose-50 text-rose-950",
     };
   }
 
@@ -63,10 +83,10 @@ const getResultCopy = (result?: string) => {
 };
 
 export default async function CheckInPage({ searchParams }: CheckInPageProps) {
-  const { result, code, auth } = await searchParams;
+  const { result, code, auth, time } = await searchParams;
   const isAuthorized = await isOrganizerAuthorized();
   const hasPin = hasOrganizerPinConfigured();
-  const resultCopy = getResultCopy(result);
+  const resultCopy = getResultCopy(result, time);
   let ticket = null as Awaited<ReturnType<typeof getTicketByCode>>;
 
   try {

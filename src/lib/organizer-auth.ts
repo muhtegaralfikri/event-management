@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { organizerLoginLimiter } from "@/lib/rate-limiter";
 
 const organizerSessionCookieName = "eventtix-organizer-session";
 
@@ -9,6 +10,24 @@ const createOrganizerSessionValue = (pin: string) =>
 const getOrganizerPin = () => process.env.ORGANIZER_CHECKIN_PIN?.trim() ?? "";
 
 export const hasOrganizerPinConfigured = () => getOrganizerPin().length > 0;
+
+/**
+ * Ambil identifier client untuk rate limiting.
+ * Menggunakan header x-forwarded-for (dari reverse proxy / Vercel)
+ * atau fallback ke string statis jika tidak tersedia.
+ */
+const getClientIdentifier = async (): Promise<string> => {
+  try {
+    const headerStore = await headers();
+    return (
+      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      headerStore.get("x-real-ip") ??
+      "unknown-client"
+    );
+  } catch {
+    return "unknown-client";
+  }
+};
 
 export const isOrganizerAuthorized = async () => {
   const pin = getOrganizerPin();
@@ -27,9 +46,23 @@ export const authorizeOrganizerSession = async (pin: string) => {
   const cookieStore = await cookies();
   const expectedPin = getOrganizerPin();
 
+  // ── Brute Force Protection ────────────────────────────────────────
+  // Max 5 percobaan login per 15 menit per IP.
+  // Ini mencegah attacker melakukan brute force pada PIN organizer.
+  const clientId = await getClientIdentifier();
+  const rateLimitKey = `organizer-login:${clientId}`;
+  const rateCheck = organizerLoginLimiter.check(rateLimitKey);
+
+  if (!rateCheck.allowed) {
+    return false;
+  }
+
   if (!expectedPin || pin.trim() !== expectedPin) {
     return false;
   }
+
+  // Login berhasil — reset rate limiter untuk IP ini
+  organizerLoginLimiter.reset(rateLimitKey);
 
   cookieStore.set(organizerSessionCookieName, createOrganizerSessionValue(expectedPin), {
     httpOnly: true,

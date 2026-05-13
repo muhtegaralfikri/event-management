@@ -135,6 +135,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               </p>
               <form action={registerForEvent} className="mt-5 space-y-4">
                 <input type="hidden" name="eventId" value={event.id} />
+                {/* Honeypot: field tersembunyi anti-bot. Hanya bot yang mengisinya. */}
+                <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0, overflow: "hidden" }}>
+                  <label htmlFor="website">Jangan diisi</label>
+                  <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" />
+                </div>
                 <label className="block">
                   <span className="text-sm font-medium text-stone-700">Nama</span>
                   <input

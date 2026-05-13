@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
+import { stripHtmlTags, sanitizeUrl } from "@/lib/sanitize";
 import type { Prisma } from "@/generated/prisma/client";
 import { UserRole } from "@/generated/prisma/enums";
 
@@ -116,30 +117,54 @@ export const getEventDetailBySlug = async (slug: string): Promise<EventDetail | 
   };
 };
 
+// ── Batas wajar untuk input numerik ────────────────────────────────
+const MAX_CAPACITY = 10_000;
+const MAX_PRICE = 100_000_000; // 100 juta IDR
+
 export const createEvent = async (formData: FormData) => {
   if (!(await isOrganizerAuthorized())) {
     redirect("/organizer/events/new?auth=required");
   }
 
-  const title = normalizeText(formData.get("title"));
-  const description = normalizeText(formData.get("description"));
+  // ── Sanitasi Input (Anti-XSS) ───────────────────────────────────
+  // stripHtmlTags menghapus semua HTML tags dari input.
+  // React JSX sudah otomatis escape entities, jadi cukup strip tags saja.
+  const title = stripHtmlTags(normalizeText(formData.get("title")));
+  const description = stripHtmlTags(normalizeText(formData.get("description")));
   const date = normalizeText(formData.get("date"));
   const time = normalizeText(formData.get("time"));
-  const location = normalizeText(formData.get("location"));
-  const image = normalizeOptionalText(formData.get("image"));
+  const location = stripHtmlTags(normalizeText(formData.get("location")));
   const capacity = Number(normalizeText(formData.get("capacity")));
   const price = Number(normalizeText(formData.get("price")) || "0");
+
+  // ── Validasi URL Banner (Anti-XSS & Protocol Injection) ─────────
+  // Hanya menerima https:// — menolak javascript:, data:, file:, dsb.
+  const rawImage = normalizeOptionalText(formData.get("image"));
+  const image = rawImage ? sanitizeUrl(rawImage) : null;
+
+  if (rawImage && !image) {
+    throw new Error("URL banner tidak valid. Hanya URL https:// yang diizinkan.");
+  }
 
   if (!title || !description || !date || !time || !location) {
     throw new Error("Semua field wajib diisi kecuali banner URL.");
   }
 
+  // ── Batas Numerik (Anti-Abuse) ──────────────────────────────────
   if (!Number.isInteger(capacity) || capacity < 1) {
     throw new Error("Kapasitas minimal 1 peserta.");
   }
 
+  if (capacity > MAX_CAPACITY) {
+    throw new Error(`Kapasitas maksimal ${MAX_CAPACITY.toLocaleString("id-ID")} peserta.`);
+  }
+
   if (!Number.isFinite(price) || price < 0) {
     throw new Error("Harga tiket tidak valid.");
+  }
+
+  if (price > MAX_PRICE) {
+    throw new Error(`Harga tiket maksimal ${MAX_PRICE.toLocaleString("id-ID")} rupiah.`);
   }
 
   const baseSlug = createSlug(title);

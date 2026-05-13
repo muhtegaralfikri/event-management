@@ -68,6 +68,9 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
 ORGANIZER_CHECKIN_PIN="strong-secret-pin"
 ```
 
+For Neon, use the pooled URL for `DATABASE_URL` in Vercel runtime.
+When you run `pnpm db:deploy` from a local shell or CI job, set `DIRECT_URL` to Neon’s direct non-pooled URL so Prisma migrations hit the primary database directly. If `DIRECT_URL` is not set, `prisma.config.ts` falls back to `DATABASE_URL`.
+
 Recommended Vercel settings:
 
 - Framework Preset: Next.js
