@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import type { Prisma } from "@/generated/prisma/client";
 import { RegistrationStatus, UserRole } from "@/generated/prisma/enums";
 
@@ -287,6 +288,10 @@ export const payRegistration = async (formData: FormData) => {
 };
 
 export const checkInTicket = async (formData: FormData) => {
+  if (!(await isOrganizerAuthorized())) {
+    redirect("/organizer/check-in?auth=required");
+  }
+
   const ticketCode = normalizeText(formData.get("ticketCode")).toUpperCase();
 
   if (!ticketCode) {

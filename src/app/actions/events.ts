@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import type { Prisma } from "@/generated/prisma/client";
 import { UserRole } from "@/generated/prisma/enums";
 
@@ -114,6 +115,10 @@ export const getEventDetailBySlug = async (slug: string): Promise<EventDetail | 
 };
 
 export const createEvent = async (formData: FormData) => {
+  if (!(await isOrganizerAuthorized())) {
+    redirect("/organizer/events/new?auth=required");
+  }
+
   const title = normalizeText(formData.get("title"));
   const description = normalizeText(formData.get("description"));
   const date = normalizeText(formData.get("date"));

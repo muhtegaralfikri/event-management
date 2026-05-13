@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { logoutOrganizer } from "@/app/actions/organizer";
 import { checkInTicket, getTicketByCode } from "@/app/actions/registrations";
+import { OrganizerAccess } from "@/components/shared/organizer-access";
 import { CheckInScanner } from "@/components/ui/check-in-scanner";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatEventDate } from "@/lib/format";
+import { hasOrganizerPinConfigured, isOrganizerAuthorized } from "@/lib/organizer-auth";
 
 type CheckInPageProps = {
   searchParams: Promise<{
     result?: string;
     code?: string;
+    auth?: string;
   }>;
 };
 
@@ -58,70 +62,97 @@ const getResultCopy = (result?: string) => {
 };
 
 export default async function CheckInPage({ searchParams }: CheckInPageProps) {
-  const { result, code } = await searchParams;
+  const { result, code, auth } = await searchParams;
+  const isAuthorized = await isOrganizerAuthorized();
+  const hasPin = hasOrganizerPinConfigured();
   const resultCopy = getResultCopy(result);
-  const ticket = code ? await getTicketByCode(code) : null;
+  const ticket = isAuthorized && code ? await getTicketByCode(code) : null;
 
   return (
     <>
       <SiteHeader />
       <main className="min-h-screen bg-slate-50">
-        <section className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="space-y-5">
-            <div>
-              <Link href="/" className="text-sm font-medium text-teal-700 hover:text-teal-900">
-                Kembali ke daftar event
-              </Link>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
-                Scan tiket peserta
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Gunakan kamera untuk membaca QR code di tiket digital. Jika kamera tidak tersedia,
-                masukkan kode tiket secara manual.
-              </p>
-            </div>
-
-            {resultCopy ? (
-              <div className={`rounded-lg border p-4 ${resultCopy.className}`}>
-                <h2 className="font-semibold">{resultCopy.title}</h2>
-                <p className="mt-1 text-sm">{resultCopy.description}</p>
-              </div>
-            ) : null}
-
-            {ticket ? (
-              <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Tiket terakhir</p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-950">{ticket.eventTitle}</h2>
-                <div className="mt-4 grid gap-3 text-sm">
-                  <div>
-                    <p className="text-slate-500">Peserta</p>
-                    <p className="font-medium text-slate-950">{ticket.attendeeName}</p>
-                    <p className="text-slate-600">{ticket.attendeeEmail}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">Jadwal</p>
-                    <p className="font-medium text-slate-950">
-                      {formatEventDate(ticket.eventDate)} at {ticket.eventTime}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">Status</p>
-                    <p className="font-medium text-slate-950">
-                      {ticket.status} / {ticket.checkedIn ? "Sudah check-in" : "Belum check-in"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">Kode</p>
-                    <p className="break-all font-mono font-semibold text-slate-950">
-                      {ticket.ticketCode}
-                    </p>
-                  </div>
+        <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+          {!hasPin ? (
+            <OrganizerAccess
+              redirectTo="/organizer/check-in"
+              title="PIN organizer belum dikonfigurasi"
+              description="Set `ORGANIZER_CHECKIN_PIN` di environment agar halaman scan tiket tidak bisa diakses pengunjung."
+            />
+          ) : !isAuthorized ? (
+            <OrganizerAccess
+              redirectTo="/organizer/check-in"
+              authState={auth}
+              title="Akses organizer diperlukan"
+              description="Scanner check-in hanya boleh dipakai di meja penyelenggara. Masukkan PIN organizer untuk membuka scanner."
+            />
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="space-y-5">
+                <div>
+                  <Link href="/" className="text-sm font-medium text-teal-700 hover:text-teal-900">
+                    Kembali ke daftar event
+                  </Link>
+                  <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+                    Scan tiket peserta
+                  </h1>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Gunakan kamera untuk membaca QR code di tiket digital. Jika kamera tidak tersedia,
+                    masukkan kode tiket secara manual.
+                  </p>
+                  <form action={logoutOrganizer} className="mt-4">
+                    <button
+                      type="submit"
+                      className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                      Keluar dari mode organizer
+                    </button>
+                  </form>
                 </div>
-              </article>
-            ) : null}
-          </div>
 
-          <CheckInScanner action={checkInTicket} />
+                {resultCopy ? (
+                  <div className={`rounded-lg border p-4 ${resultCopy.className}`}>
+                    <h2 className="font-semibold">{resultCopy.title}</h2>
+                    <p className="mt-1 text-sm">{resultCopy.description}</p>
+                  </div>
+                ) : null}
+
+                {ticket ? (
+                  <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-sm text-slate-500">Tiket terakhir</p>
+                    <h2 className="mt-1 text-xl font-semibold text-slate-950">{ticket.eventTitle}</h2>
+                    <div className="mt-4 grid gap-3 text-sm">
+                      <div>
+                        <p className="text-slate-500">Peserta</p>
+                        <p className="font-medium text-slate-950">{ticket.attendeeName}</p>
+                        <p className="text-slate-600">{ticket.attendeeEmail}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Jadwal</p>
+                        <p className="font-medium text-slate-950">
+                          {formatEventDate(ticket.eventDate)} at {ticket.eventTime}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Status</p>
+                        <p className="font-medium text-slate-950">
+                          {ticket.status} / {ticket.checkedIn ? "Sudah check-in" : "Belum check-in"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Kode</p>
+                        <p className="break-all font-mono font-semibold text-slate-950">
+                          {ticket.ticketCode}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                ) : null}
+              </div>
+
+              <CheckInScanner action={checkInTicket} />
+            </div>
+          )}
         </section>
       </main>
     </>

@@ -13,6 +13,7 @@ Current MVP slice:
 - Digital ticket page with unique ticket code and QR code
 - Ticket lookup page by ticket code or attendee email
 - Organizer check-in page for QR scanning and manual ticket validation
+- Organizer routes protected by `ORGANIZER_CHECKIN_PIN`
 
 ## Local Development
 
@@ -28,6 +29,7 @@ For FlyEnv PostgreSQL on this machine:
 
 ```env
 DATABASE_URL="postgresql://root:root@localhost:5432/eventtix?schema=public"
+ORGANIZER_CHECKIN_PIN="123456"
 ```
 
 Run migrations and start the app:
@@ -63,6 +65,7 @@ Set this environment variable in Vercel for Production and Preview:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+ORGANIZER_CHECKIN_PIN="strong-secret-pin"
 ```
 
 Recommended Vercel settings:
