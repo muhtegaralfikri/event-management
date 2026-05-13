@@ -159,6 +159,15 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                     placeholder="nama@email.com"
                   />
                 </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-stone-700">Kode Promo (Opsional)</span>
+                  <input
+                    name="promoCode"
+                    type="text"
+                    className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm outline-none focus:border-teal-700 uppercase"
+                    placeholder="Contoh: PROMO50"
+                  />
+                </label>
                 <button
                   type="submit"
                   disabled={remainingSeats === 0}

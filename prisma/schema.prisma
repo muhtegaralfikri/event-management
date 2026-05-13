@@ -19,18 +19,77 @@ enum RegistrationStatus {
   CANCELLED
 }
 
+enum EventCategory {
+  TECHNOLOGY
+  BUSINESS
+  DESIGN
+  COMMUNITY
+  WORKSHOP
+  SEMINAR
+  NETWORKING
+  OTHER
+}
+
+enum EventStatus {
+  ACTIVE
+  CANCELLED
+}
+
 model User {
   id            String         @id @default(uuid()) @db.Uuid
   name          String
   email         String         @unique
+  emailVerified DateTime?
+  image         String?
   password      String?
   role          UserRole       @default(ATTENDEE)
   events        Event[]
   registrations Registration[]
+  accounts      Account[]
+  sessions      Session[]
+  promoCodes    PromoCode[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 model Event {
@@ -38,6 +97,8 @@ model Event {
   title         String
   slug          String         @unique
   description   String
+  category      EventCategory  @default(OTHER)
+  status        EventStatus    @default(ACTIVE)
   date          DateTime
   time          String
   location      String
@@ -47,6 +108,7 @@ model Event {
   organizerId   String         @db.Uuid
   organizer     User           @relation(fields: [organizerId], references: [id], onDelete: Restrict)
   registrations Registration[]
+  promoCodes    PromoCode[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -55,18 +117,41 @@ model Event {
   @@map("events")
 }
 
+model PromoCode {
+  id              String         @id @default(uuid()) @db.Uuid
+  code            String         @unique
+  discountPercent Int?           // misal: 50 = 50%
+  discountAmount  Decimal?       @db.Decimal(12, 2) // potongan flat
+  maxUses         Int            @default(0) // 0 = unlimited
+  currentUses     Int            @default(0)
+  expiresAt       DateTime?
+  eventId         String?        @db.Uuid
+  event           Event?         @relation(fields: [eventId], references: [id])
+  organizerId     String         @db.Uuid
+  organizer       User           @relation(fields: [organizerId], references: [id])
+  registrations   Registration[]
+  createdAt       DateTime       @default(now())
+
+  @@index([eventId])
+  @@index([organizerId])
+  @@map("promo_codes")
+}
+
 model Registration {
-  id         String             @id @default(uuid()) @db.Uuid
-  userId     String             @db.Uuid
-  eventId    String             @db.Uuid
-  ticketCode String             @unique
-  status     RegistrationStatus @default(PENDING)
+  id          String             @id @default(uuid()) @db.Uuid
+  userId      String             @db.Uuid
+  eventId     String             @db.Uuid
+  promoCodeId String?            @db.Uuid
+  ticketCode  String             @unique
+  status      RegistrationStatus @default(PENDING)
   checkedIn   Boolean            @default(false)
   checkedInAt DateTime?
+  finalPrice  Decimal?           @db.Decimal(12, 2)
   user        User               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  event      Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  promoCode   PromoCode?         @relation(fields: [promoCodeId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   @@unique([userId, eventId])
   @@index([eventId])

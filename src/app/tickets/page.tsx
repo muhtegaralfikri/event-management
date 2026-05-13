@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { findTicket, getTicketsByEmail } from "@/app/actions/registrations";
 import { SiteHeader } from "@/components/shared/site-header";
+import { auth } from "@/lib/auth";
 import { formatEventDate } from "@/lib/format";
 import { Search, TicketCheck } from "lucide-react";
 
@@ -21,11 +22,15 @@ export const dynamic = "force-dynamic";
 
 export default async function TicketsLookupPage({ searchParams }: TicketsLookupPageProps) {
   const { email, result } = await searchParams;
+  const session = await auth();
+  const normalizedEmail = email?.trim().toLowerCase();
+  const sessionEmail = session?.user?.email?.toLowerCase();
+  const canLookupByEmail = Boolean(normalizedEmail && sessionEmail === normalizedEmail);
   let tickets: Awaited<ReturnType<typeof getTicketsByEmail>> = [];
   let databaseError: string | null = null;
 
   try {
-    tickets = email ? await getTicketsByEmail(email) : [];
+    tickets = canLookupByEmail && normalizedEmail ? await getTicketsByEmail(normalizedEmail) : [];
   } catch (error) {
     databaseError = error instanceof Error ? error.message : "Koneksi database gagal.";
   }
@@ -101,8 +106,22 @@ export default async function TicketsLookupPage({ searchParams }: TicketsLookupP
             ) : null}
             {!email ? (
               <p className="mt-2 text-sm text-stone-600">
-                Masukkan email untuk menampilkan tiket yang pernah didaftarkan.
+                Masukkan email akun yang sedang login untuk menampilkan tiket Anda.
               </p>
+            ) : !canLookupByEmail ? (
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                <p className="font-semibold">Login diperlukan untuk pencarian via email.</p>
+                <p className="mt-1">
+                  Untuk melindungi tiket peserta, email hanya bisa dipakai oleh pemilik akun yang
+                  sedang login. Kode tiket tetap bisa dibuka langsung jika Anda menyimpannya.
+                </p>
+                <Link
+                  href={`/login?callbackUrl=${encodeURIComponent(`/tickets?email=${normalizedEmail ?? ""}`)}`}
+                  className="mt-3 inline-flex rounded-md bg-stone-950 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-800"
+                >
+                  Login untuk melihat tiket
+                </Link>
+              </div>
             ) : tickets.length === 0 ? (
               <p className="mt-2 text-sm text-stone-600">
                 Tidak ada tiket untuk email <span className="font-medium">{email}</span>.

@@ -69,6 +69,14 @@ const getResultCopy = (result?: string, checkedInTime?: string) => {
     };
   }
 
+  if (result === "cancelled") {
+    return {
+      title: "Event sudah dibatalkan",
+      description: "Tiket ini tidak bisa dipakai check-in karena event tidak aktif.",
+      className: "border-rose-200 bg-rose-50 text-rose-950",
+    };
+  }
+
   if (result === "not-found") {
     return {
       title: "Tiket tidak ditemukan",

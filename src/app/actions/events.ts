@@ -1,15 +1,14 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
-import { isOrganizerAuthorized } from "@/lib/organizer-auth";
+import { auth } from "@/lib/auth";
 import { stripHtmlTags, sanitizeUrl } from "@/lib/sanitize";
 import { normalizeText, normalizeOptionalText } from "@/lib/form-utils";
 import type { Prisma } from "@/generated/prisma/client";
-import { UserRole } from "@/generated/prisma/enums";
+import { UserRole, EventCategory, EventStatus } from "@/generated/prisma/enums";
 
 export type EventListItem = {
   id: string;
@@ -22,6 +21,7 @@ export type EventListItem = {
   price: string;
   capacity: number;
   image: string | null;
+  category: EventCategory;
   organizerName: string;
   registeredCount: number;
 };
@@ -48,6 +48,8 @@ const getEventSelect = {
   price: true,
   capacity: true,
   image: true,
+  category: true,
+  status: true,
   organizer: {
     select: {
       name: true,
@@ -76,18 +78,31 @@ const mapEvent = (event: EventWithSummary): EventListItem => ({
   price: event.price.toString(),
   capacity: event.capacity,
   image: event.image,
+  category: event.category,
   organizerName: event.organizer.name,
   registeredCount: event._count.registrations,
 });
 
-export const getActiveEvents = async (): Promise<EventListItem[]> => {
+export const getActiveEvents = async (search?: string, category?: string): Promise<EventListItem[]> => {
   const prisma = getPrisma();
-  const events = await prisma.event.findMany({
-    where: {
-      date: {
-        gte: new Date(),
-      },
+  
+  const whereClause: Prisma.EventWhereInput = {
+    status: EventStatus.ACTIVE,
+    date: {
+      gte: new Date(),
     },
+  };
+
+  if (search) {
+    whereClause.title = { contains: search, mode: "insensitive" };
+  }
+
+  if (category && category !== "ALL" && Object.values(EventCategory).includes(category as EventCategory)) {
+    whereClause.category = category as EventCategory;
+  }
+
+  const events = await prisma.event.findMany({
+    where: whereClause,
     orderBy: {
       date: "asc",
     },
@@ -102,6 +117,7 @@ export const getEventDetailBySlug = async (slug: string): Promise<EventDetail | 
   const event = await prisma.event.findUnique({
     where: {
       slug,
+      status: EventStatus.ACTIVE,
     },
     select: getEventSelect,
   });
@@ -116,28 +132,28 @@ export const getEventDetailBySlug = async (slug: string): Promise<EventDetail | 
   };
 };
 
-// ── Batas wajar untuk input numerik ────────────────────────────────
 const MAX_CAPACITY = 10_000;
-const MAX_PRICE = 100_000_000; // 100 juta IDR
+const MAX_PRICE = 100_000_000;
 
 export const createEvent = async (formData: FormData) => {
-  if (!(await isOrganizerAuthorized())) {
-    redirect("/organizer/events/new?auth=required");
+  const session = await auth();
+
+  if (!session?.user || session.user.role !== UserRole.ORGANIZER) {
+    redirect("/login");
   }
 
-  // ── Sanitasi Input (Anti-XSS) ───────────────────────────────────
-  // stripHtmlTags menghapus semua HTML tags dari input.
-  // React JSX sudah otomatis escape entities, jadi cukup strip tags saja.
   const title = stripHtmlTags(normalizeText(formData.get("title")));
   const description = stripHtmlTags(normalizeText(formData.get("description")));
   const date = normalizeText(formData.get("date"));
   const time = normalizeText(formData.get("time"));
   const location = stripHtmlTags(normalizeText(formData.get("location")));
-  const capacity = Number(normalizeText(formData.get("capacity")));
-  const price = Number(normalizeText(formData.get("price")) || "0");
+  const capacityStr = normalizeText(formData.get("capacity"));
+  const priceStr = normalizeText(formData.get("price") || "0");
+  const categoryValue = normalizeText(formData.get("category"));
 
-  // ── Validasi URL Banner (Anti-XSS & Protocol Injection) ─────────
-  // Hanya menerima https:// — menolak javascript:, data:, file:, dsb.
+  const capacity = Number(capacityStr);
+  const price = Number(priceStr);
+
   const rawImage = normalizeOptionalText(formData.get("image"));
   const image = rawImage ? sanitizeUrl(rawImage) : null;
 
@@ -145,11 +161,15 @@ export const createEvent = async (formData: FormData) => {
     throw new Error("URL banner tidak valid. Hanya URL https:// yang diizinkan.");
   }
 
-  if (!title || !description || !date || !time || !location) {
+  if (!title || !description || !date || !time || !location || !categoryValue) {
     throw new Error("Semua field wajib diisi kecuali banner URL.");
   }
 
-  // ── Batas Numerik (Anti-Abuse) ──────────────────────────────────
+  const category = categoryValue as EventCategory;
+  if (!Object.values(EventCategory).includes(category)) {
+    throw new Error("Kategori tidak valid.");
+  }
+
   if (!Number.isInteger(capacity) || capacity < 1) {
     throw new Error("Kapasitas minimal 1 peserta.");
   }
@@ -174,19 +194,6 @@ export const createEvent = async (formData: FormData) => {
   }
 
   const prisma = getPrisma();
-  const organizer = await prisma.user.upsert({
-    where: {
-      email: "organizer@eventtix.local",
-    },
-    update: {
-      role: UserRole.ORGANIZER,
-    },
-    create: {
-      name: "EventTix Organizer",
-      email: "organizer@eventtix.local",
-      role: UserRole.ORGANIZER,
-    },
-  });
 
   const existingSlug = await prisma.event.findUnique({
     where: { slug: baseSlug },
@@ -206,7 +213,9 @@ export const createEvent = async (formData: FormData) => {
       price,
       capacity,
       image,
-      organizerId: organizer.id,
+      category,
+      status: EventStatus.ACTIVE,
+      organizerId: session.user.id,
     },
   });
 

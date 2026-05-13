@@ -4,12 +4,15 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getPrisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import { isHoneypotFilled, stripHtmlTags } from "@/lib/sanitize";
 import { normalizeText, getClientIdentifier } from "@/lib/form-utils";
 import { registrationLimiter } from "@/lib/rate-limiter";
+import { sendTicketEmail } from "@/lib/email";
+import { validatePromoCode } from "./promo";
 import type { Prisma } from "@/generated/prisma/client";
-import { RegistrationStatus, UserRole } from "@/generated/prisma/enums";
+import { EventStatus, RegistrationStatus, UserRole } from "@/generated/prisma/enums";
 
 export type TicketDetail = {
   id: string;
@@ -78,6 +81,7 @@ const ticketSelect = {
           name: true,
         },
       },
+      status: true,
     },
   },
 } as const;
@@ -106,8 +110,6 @@ const mapTicket = (ticket: TicketWithRelations): TicketDetail => ({
 
 export const registerForEvent = async (formData: FormData) => {
   // ── Honeypot Check (Anti-Bot) ───────────────────────────────────
-  // Field "website" sengaja disembunyikan di UI.
-  // Hanya bot otomatis yang mengisinya. Jika terisi → tolak silently.
   if (isHoneypotFilled(formData)) {
     throw new Error("Registrasi tidak dapat diproses.");
   }
@@ -115,13 +117,13 @@ export const registerForEvent = async (formData: FormData) => {
   const eventId = normalizeText(formData.get("eventId"));
   const attendeeName = stripHtmlTags(normalizeText(formData.get("name")));
   const attendeeEmail = normalizeText(formData.get("email")).toLowerCase();
+  const promoCodeInput = normalizeText(formData.get("promoCode"));
 
   if (!eventId || !attendeeName || !isValidEmail(attendeeEmail)) {
     throw new Error("Nama dan email valid wajib diisi.");
   }
 
   // ── Rate Limiting (Anti-Spam) ───────────────────────────────────
-  // Max 10 registrasi per 15 menit per IP.
   const clientId = await getClientIdentifier();
   const rateLimitKey = `registration:${clientId}`;
   const rateCheck = registrationLimiter.check(rateLimitKey);
@@ -133,14 +135,23 @@ export const registerForEvent = async (formData: FormData) => {
   }
 
   const prisma = getPrisma();
+  
+  let validPromoId: string | null = null;
+  let promoResult: Awaited<ReturnType<typeof validatePromoCode>> | null = null;
+
+  if (promoCodeInput) {
+    promoResult = await validatePromoCode(promoCodeInput, eventId);
+    if (!promoResult?.valid || !promoResult.promo) {
+      throw new Error(promoResult?.message || "Kode promo tidak valid");
+    }
+    validPromoId = promoResult.promo.id;
+  }
+
   const ticketCode = await prisma.$transaction(async (tx) => {
     // ── Race Condition Fix (Atomic Capacity Check) ────────────────
-    // Menggunakan row-level locking via SELECT ... FOR UPDATE
-    // agar hanya satu request yang bisa memproses kapasitas event
-    // pada satu waktu. Ini mencegah overbooking saat concurrent.
     const lockedEvents = await tx.$queryRaw<
-      Array<{ id: string; slug: string; price: string; capacity: number }>
-    >`SELECT id, slug, price::text, capacity FROM events WHERE id = ${eventId}::uuid FOR UPDATE`;
+      Array<{ id: string; slug: string; price: string; capacity: number; status: EventStatus }>
+    >`SELECT id, slug, price::text, capacity, status FROM events WHERE id = ${eventId}::uuid FOR UPDATE`;
 
     const event = lockedEvents[0];
 
@@ -148,7 +159,10 @@ export const registerForEvent = async (formData: FormData) => {
       throw new Error("Event tidak ditemukan.");
     }
 
-    // Hitung registrasi aktif (non-CANCELLED)
+    if (event.status !== EventStatus.ACTIVE) {
+      throw new Error("Event sudah tidak aktif.");
+    }
+
     const activeCount = await tx.registration.count({
       where: {
         eventId,
@@ -160,6 +174,18 @@ export const registerForEvent = async (formData: FormData) => {
 
     if (activeCount >= event.capacity) {
       throw new Error("Kapasitas event sudah penuh.");
+    }
+
+    // Check if promo code max usage exceeded in transaction
+    if (validPromoId && promoResult?.promo && promoResult.promo.maxUses > 0) {
+      const lockedPromo = await tx.$queryRaw<
+        Array<{ id: string; currentUses: number; maxUses: number }>
+      >`SELECT id, "currentUses", "maxUses" FROM promo_codes WHERE id = ${validPromoId}::uuid FOR UPDATE`;
+      
+      const p = lockedPromo[0];
+      if (p && p.currentUses >= p.maxUses) {
+        throw new Error("Kode promo sudah mencapai batas penggunaan.");
+      }
     }
 
     const user = await tx.user.upsert({
@@ -186,6 +212,8 @@ export const registerForEvent = async (formData: FormData) => {
       select: {
         ticketCode: true,
         status: true,
+        event: { select: { title: true, date: true, time: true, location: true } },
+        user: { select: { name: true, email: true } }
       },
     });
 
@@ -194,23 +222,56 @@ export const registerForEvent = async (formData: FormData) => {
     }
 
     const eventPrice = Number(event.price);
-    const isFree = eventPrice === 0 || Number.isNaN(eventPrice);
+    let finalPrice = eventPrice;
+
+    if (validPromoId && promoResult?.promo) {
+      if (promoResult.promo.discountPercent) {
+        finalPrice = eventPrice - (eventPrice * promoResult.promo.discountPercent / 100);
+      } else if (promoResult.promo.discountAmount) {
+        finalPrice = eventPrice - Number(promoResult.promo.discountAmount);
+      }
+      finalPrice = Math.max(0, finalPrice);
+    }
+
+    const isFree = finalPrice === 0 || Number.isNaN(finalPrice);
+    const newTicketCode = createTicketCode(event.slug);
+    const status = isFree ? RegistrationStatus.PAID : RegistrationStatus.PENDING;
 
     const registration = await tx.registration.create({
       data: {
         userId: user.id,
         eventId,
-        ticketCode: createTicketCode(event.slug),
-        status: isFree ? RegistrationStatus.PAID : RegistrationStatus.PENDING,
+        ticketCode: newTicketCode,
+        status,
+        promoCodeId: validPromoId,
+        finalPrice: finalPrice,
       },
       select: {
         ticketCode: true,
         status: true,
+        event: { select: { title: true, date: true, time: true, location: true } },
+        user: { select: { name: true, email: true } }
       },
     });
 
+    if (validPromoId) {
+      await tx.promoCode.update({
+        where: { id: validPromoId },
+        data: { currentUses: { increment: 1 } }
+      });
+    }
+
     return registration;
   });
+
+  // Async send email (fire and forget)
+  sendTicketEmail(
+    ticketCode.user.email,
+    ticketCode.user.name,
+    ticketCode.event,
+    ticketCode.ticketCode,
+    ticketCode.status
+  ).catch(console.error);
 
   revalidatePath("/");
   redirect(
@@ -236,6 +297,13 @@ export const getTicketsByEmail = async (email: string): Promise<TicketLookupItem
   const attendeeEmail = email.trim().toLowerCase();
 
   if (!isValidEmail(attendeeEmail)) {
+    return [];
+  }
+
+  const session = await auth();
+  const sessionEmail = session?.user?.email?.toLowerCase();
+
+  if (!sessionEmail || sessionEmail !== attendeeEmail) {
     return [];
   }
 
@@ -311,11 +379,20 @@ export const payRegistration = async (formData: FormData) => {
     },
     select: {
       status: true,
+      event: {
+        select: {
+          status: true,
+        },
+      },
     },
   });
 
   if (!ticket) {
     throw new Error("Tiket tidak ditemukan.");
+  }
+
+  if (ticket.event.status !== EventStatus.ACTIVE) {
+    throw new Error("Event sudah dibatalkan dan tiket tidak bisa dibayar.");
   }
 
   if (ticket.status !== RegistrationStatus.PENDING) {
@@ -334,6 +411,26 @@ export const payRegistration = async (formData: FormData) => {
       status: RegistrationStatus.PAID,
     },
   });
+
+  const updatedTicket = await prisma.registration.findUnique({
+    where: { ticketCode },
+    select: {
+      ticketCode: true,
+      status: true,
+      user: { select: { email: true, name: true } },
+      event: { select: { title: true, date: true, time: true, location: true } }
+    }
+  });
+
+  if (updatedTicket) {
+    sendTicketEmail(
+      updatedTicket.user.email,
+      updatedTicket.user.name,
+      updatedTicket.event,
+      updatedTicket.ticketCode,
+      updatedTicket.status
+    ).catch(console.error);
+  }
 
   revalidatePath(`/payments/${ticketCode}`);
   revalidatePath(`/tickets/${ticketCode}`);
@@ -361,6 +458,11 @@ export const checkInTicket = async (formData: FormData) => {
       status: true,
       checkedIn: true,
       checkedInAt: true,
+      event: {
+        select: {
+          status: true,
+        },
+      },
     },
   });
 
@@ -370,6 +472,10 @@ export const checkInTicket = async (formData: FormData) => {
 
   if (ticket.status !== RegistrationStatus.PAID) {
     redirect(`/organizer/check-in?result=unpaid&code=${encodeURIComponent(ticketCode)}`);
+  }
+
+  if (ticket.event.status !== EventStatus.ACTIVE) {
+    redirect(`/organizer/check-in?result=cancelled&code=${encodeURIComponent(ticketCode)}`);
   }
 
   if (ticket.checkedIn) {
