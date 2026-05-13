@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { auth, signIn } from "@/lib/auth";
 import { Mail, KeyRound } from "lucide-react";
 
@@ -81,12 +82,12 @@ export default async function LoginPage({
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="mt-6 w-full rounded-md bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-stone-800"
+        <SubmitButton
+          pendingText="Memproses login..."
+          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-stone-800 disabled:cursor-wait disabled:opacity-75"
         >
           Masuk organizer
-        </button>
+        </SubmitButton>
       </form>
 
       {googleEnabled ? (
@@ -104,9 +105,9 @@ export default async function LoginPage({
             }}
             className="mt-6"
           >
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            <SubmitButton
+              pendingText="Membuka Google..."
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:cursor-wait disabled:opacity-75"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -127,7 +128,7 @@ export default async function LoginPage({
                 />
               </svg>
               Masuk dengan Google
-            </button>
+            </SubmitButton>
           </form>
         </>
       ) : null}

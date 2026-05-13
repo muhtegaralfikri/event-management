@@ -15,6 +15,10 @@ type UserMenuProps = {
 };
 
 export const UserMenu = ({ user }: UserMenuProps) => {
+  const handleSignOut = () => {
+    void signOut();
+  };
+
   return (
     <div className="group relative z-50">
       <button className="flex items-center gap-2 rounded-full border border-stone-200 bg-white p-1 pr-3 shadow-sm hover:bg-stone-50 transition-colors">
@@ -54,7 +58,7 @@ export const UserMenu = ({ user }: UserMenuProps) => {
           )}
           
           <button
-            onClick={() => signOut()}
+            onClick={handleSignOut}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-red-600 hover:bg-red-50"
           >
             <LogOut className="h-4 w-4" />

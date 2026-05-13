@@ -58,11 +58,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        const role =
+          user.role === UserRole.ATTENDEE
+            ? (
+                await getPrisma().user.update({
+                  where: { id: user.id },
+                  data: { role: UserRole.ORGANIZER },
+                  select: { role: true },
+                })
+              ).role
+            : user.role;
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role,
         };
       },
     }),
@@ -73,6 +84,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role;
         token.id = user.id;
       }
+
+      if (!user && token.id && token.role === UserRole.ATTENDEE) {
+        const existingUser = await getPrisma().user.findUnique({
+          where: { id: token.id as string },
+          select: { password: true, role: true },
+        });
+
+        if (existingUser?.password) {
+          const updatedUser = await getPrisma().user.update({
+            where: { id: token.id as string },
+            data: { role: UserRole.ORGANIZER },
+            select: { role: true },
+          });
+
+          token.role = updatedUser.role;
+        } else if (existingUser?.role) {
+          token.role = existingUser.role;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {

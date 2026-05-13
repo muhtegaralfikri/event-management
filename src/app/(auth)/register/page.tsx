@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { registerUser } from "@/app/actions/auth";
-import { Mail, KeyRound, User } from "lucide-react";
+import { LoaderCircle, Mail, KeyRound, User } from "lucide-react";
 
 export default function RegisterPage() {
   const [error, formAction, isPending] = useActionState(async (state: string | null, formData: FormData) => {
@@ -77,9 +77,17 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={isPending}
-          className="mt-6 w-full rounded-md bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-50"
+          aria-busy={isPending}
+          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-stone-800 disabled:cursor-wait disabled:opacity-75"
         >
-          {isPending ? "Mendaftar..." : "Daftar sebagai organizer"}
+          {isPending ? (
+            <>
+              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Membuat akun...
+            </>
+          ) : (
+            "Daftar sebagai organizer"
+          )}
         </button>
       </form>
 

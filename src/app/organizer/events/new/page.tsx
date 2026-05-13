@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { UserRole } from "@/generated/prisma/enums";
 import { SiteHeader } from "@/components/shared/site-header";
 import { InputField } from "@/components/ui/input-field";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export const metadata: Metadata = {
   title: "Buat Event Baru | EventTix",
@@ -137,12 +138,12 @@ export default async function CreateEventPage() {
             </div>
 
             <div className="mt-8 flex justify-end">
-              <button
-                type="submit"
-                className="rounded-md bg-teal-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+              <SubmitButton
+                pendingText="Membuat event..."
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-75"
               >
                 Buat Event
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </section>
