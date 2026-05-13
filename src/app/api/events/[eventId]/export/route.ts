@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as XLSX from "xlsx";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { UserRole } from "@/generated/prisma/enums";
-import { sanitizeCsvField } from "@/lib/sanitize";
+
+const sanitizeExcelText = (value: string) => {
+  const trimmed = value.trim();
+  const firstChar = trimmed.charAt(0);
+
+  return ["=", "+", "-", "@", "\t", "\r"].includes(firstChar) ? `'${trimmed}` : trimmed;
+};
+
+const formatDateTime = (date: Date | null) => date?.toISOString() ?? "";
 
 export async function GET(
   request: NextRequest,
@@ -35,29 +44,53 @@ export async function GET(
     return new NextResponse("Not Found or Unauthorized", { status: 404 });
   }
 
-  // Generate CSV
-  const headers = ["Ticket Code", "Name", "Email", "Status", "Checked In", "Check-in Time", "Promo Code", "Final Price", "Registration Date"];
+  const headers = [
+    "Ticket Code",
+    "Name",
+    "Email",
+    "Status",
+    "Checked In",
+    "Check-in Time",
+    "Promo Code",
+    "Final Price",
+    "Registration Date",
+  ];
   
   const rows = event.registrations.map(r => [
-    sanitizeCsvField(r.ticketCode),
-    sanitizeCsvField(r.user.name),
-    sanitizeCsvField(r.user.email),
-    sanitizeCsvField(r.status),
+    sanitizeExcelText(r.ticketCode),
+    sanitizeExcelText(r.user.name),
+    sanitizeExcelText(r.user.email),
+    r.status,
     r.checkedIn ? "Yes" : "No",
-    r.checkedInAt ? sanitizeCsvField(r.checkedInAt.toISOString()) : "",
-    sanitizeCsvField(r.promoCode?.code || "-"),
-    r.finalPrice ? r.finalPrice.toString() : event.price.toString(),
-    sanitizeCsvField(r.createdAt.toISOString())
+    formatDateTime(r.checkedInAt),
+    sanitizeExcelText(r.promoCode?.code || "-"),
+    Number(r.finalPrice ? r.finalPrice.toString() : event.price.toString()),
+    formatDateTime(r.createdAt),
   ]);
 
-  const csvContent = [
-    headers.join(","),
-    ...rows.map(row => row.join(","))
-  ].join("\n");
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  worksheet["!cols"] = [
+    { wch: 18 },
+    { wch: 24 },
+    { wch: 30 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 24 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 24 },
+  ];
 
-  const response = new NextResponse(csvContent);
-  response.headers.set("Content-Type", "text/csv; charset=utf-8");
-  response.headers.set("Content-Disposition", `attachment; filename="${event.slug}-attendees.csv"`);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Attendees");
+  const excelBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+
+  const response = new NextResponse(excelBuffer);
+  response.headers.set(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  response.headers.set("Content-Disposition", `attachment; filename="${event.slug}-attendees.xlsx"`);
 
   return response;
 }

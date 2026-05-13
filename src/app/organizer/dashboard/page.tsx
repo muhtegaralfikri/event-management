@@ -199,7 +199,7 @@ export default async function OrganizerDashboard() {
                           <a 
                             href={`/api/events/${event.id}/export`}
                             className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
-                            title="Export Data Peserta (CSV)"
+                            title="Export data peserta Excel"
                           >
                             <FileDown className="h-4 w-4" />
                           </a>
