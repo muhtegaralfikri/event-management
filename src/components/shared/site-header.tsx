@@ -1,25 +1,33 @@
 import Link from "next/link";
+import { CalendarDays, QrCode, Search, ShieldCheck } from "lucide-react";
 
 export const SiteHeader = () => (
-  <header className="border-b border-slate-200 bg-white">
-    <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-      <Link href="/" className="text-lg font-semibold tracking-tight text-slate-950">
-        EventTix
+  <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-[#fffdf8]/90 backdrop-blur-xl">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+      <Link href="/" className="flex items-center gap-3 text-lg font-semibold tracking-tight text-stone-950">
+        <span className="grid h-9 w-9 place-items-center rounded-md bg-teal-700 text-white shadow-sm">
+          <CalendarDays className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span>EventTix</span>
       </Link>
-      <nav className="flex items-center gap-2 text-sm font-medium text-slate-700">
-        <Link href="/" className="rounded-md px-3 py-2 hover:bg-slate-100">
+      <nav className="flex flex-wrap items-center gap-2 text-sm font-medium text-stone-700">
+        <Link href="/" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
+          <CalendarDays className="h-4 w-4" aria-hidden="true" />
           Event
         </Link>
-        <Link href="/tickets" className="rounded-md px-3 py-2 hover:bg-slate-100">
+        <Link href="/tickets" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
+          <Search className="h-4 w-4" aria-hidden="true" />
           Cari Tiket
         </Link>
-        <Link href="/organizer/check-in" className="rounded-md px-3 py-2 hover:bg-slate-100">
+        <Link href="/organizer/check-in" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
+          <QrCode className="h-4 w-4" aria-hidden="true" />
           Scan Tiket
         </Link>
         <Link
           href="/organizer/events/new"
-          className="rounded-md bg-slate-950 px-3 py-2 text-white hover:bg-slate-800"
+          className="inline-flex items-center gap-2 rounded-md bg-stone-950 px-3 py-2 text-white shadow-sm hover:bg-stone-800"
         >
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
           Buat Event
         </Link>
       </nav>

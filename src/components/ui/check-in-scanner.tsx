@@ -6,6 +6,7 @@ import {
   Html5QrcodeScannerState,
   Html5QrcodeSupportedFormats,
 } from "html5-qrcode";
+import { QrCode, Square, Video } from "lucide-react";
 
 type CheckInScannerProps = {
   action: (formData: FormData) => void;
@@ -101,10 +102,10 @@ export const CheckInScanner = ({ action }: CheckInScannerProps) => {
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-xl">
       <div
         id={scannerElementId}
-        className="min-h-72 overflow-hidden rounded-lg bg-slate-950 [&_video]:aspect-square [&_video]:w-full [&_video]:object-cover"
+        className="min-h-72 overflow-hidden rounded-lg bg-stone-950 [&_video]:aspect-square [&_video]:w-full [&_video]:object-cover"
       />
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -112,37 +113,40 @@ export const CheckInScanner = ({ action }: CheckInScannerProps) => {
           type="button"
           onClick={() => void startScanner()}
           disabled={isScanning}
-          className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="inline-flex items-center gap-2 rounded-md bg-stone-950 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-300"
         >
+          <Video className="h-4 w-4" aria-hidden="true" />
           Mulai scan
         </button>
         <button
           type="button"
           onClick={() => void stopScanner()}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-md border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
         >
+          <Square className="h-4 w-4" aria-hidden="true" />
           Stop
         </button>
       </div>
 
-      <p className="mt-3 text-sm text-slate-600">{message}</p>
+      <p className="mt-3 text-sm text-stone-600">{message}</p>
 
       <form ref={formRef} action={action} className="mt-5 space-y-3">
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Kode tiket</span>
+          <span className="text-sm font-medium text-stone-700">Kode tiket</span>
           <input
             name="ticketCode"
             value={ticketCode}
             onChange={(event) => setTicketCode(event.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm uppercase outline-none focus:border-teal-700"
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 font-mono text-sm uppercase outline-none focus:border-teal-700"
             placeholder="EVT-XXX-12345678"
             required
           />
         </label>
         <button
           type="submit"
-          className="w-full rounded-md bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
         >
+          <QrCode className="h-4 w-4" aria-hidden="true" />
           Check-in tiket
         </button>
       </form>

@@ -6,6 +6,7 @@ import { CheckInScanner } from "@/components/ui/check-in-scanner";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatEventDate } from "@/lib/format";
 import { hasOrganizerPinConfigured, isOrganizerAuthorized } from "@/lib/organizer-auth";
+import { ArrowLeft } from "lucide-react";
 
 type CheckInPageProps = {
   searchParams: Promise<{
@@ -71,8 +72,8 @@ export default async function CheckInPage({ searchParams }: CheckInPageProps) {
   return (
     <>
       <SiteHeader />
-      <main className="min-h-screen bg-slate-50">
-        <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+      <main className="min-h-screen">
+        <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
           {!hasPin ? (
             <OrganizerAccess
               redirectTo="/organizer/check-in"
@@ -90,20 +91,21 @@ export default async function CheckInPage({ searchParams }: CheckInPageProps) {
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="space-y-5">
                 <div>
-                  <Link href="/" className="text-sm font-medium text-teal-700 hover:text-teal-900">
+                  <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-teal-800 hover:text-teal-950">
+                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                     Kembali ke daftar event
                   </Link>
-                  <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+                  <h1 className="mt-4 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
                     Scan tiket peserta
                   </h1>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                  <p className="mt-2 text-sm leading-6 text-stone-600">
                     Gunakan kamera untuk membaca QR code di tiket digital. Jika kamera tidak tersedia,
                     masukkan kode tiket secara manual.
                   </p>
                   <form action={logoutOrganizer} className="mt-4">
                     <button
                       type="submit"
-                      className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                      className="rounded-md border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"
                     >
                       Keluar dari mode organizer
                     </button>
@@ -118,30 +120,30 @@ export default async function CheckInPage({ searchParams }: CheckInPageProps) {
                 ) : null}
 
                 {ticket ? (
-                  <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-sm text-slate-500">Tiket terakhir</p>
-                    <h2 className="mt-1 text-xl font-semibold text-slate-950">{ticket.eventTitle}</h2>
+                  <article className="rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
+                    <p className="text-sm text-stone-500">Tiket terakhir</p>
+                    <h2 className="mt-1 text-xl font-semibold text-stone-950">{ticket.eventTitle}</h2>
                     <div className="mt-4 grid gap-3 text-sm">
                       <div>
-                        <p className="text-slate-500">Peserta</p>
-                        <p className="font-medium text-slate-950">{ticket.attendeeName}</p>
-                        <p className="text-slate-600">{ticket.attendeeEmail}</p>
+                        <p className="text-stone-500">Peserta</p>
+                        <p className="font-medium text-stone-950">{ticket.attendeeName}</p>
+                        <p className="text-stone-600">{ticket.attendeeEmail}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Jadwal</p>
-                        <p className="font-medium text-slate-950">
+                        <p className="text-stone-500">Jadwal</p>
+                        <p className="font-medium text-stone-950">
                           {formatEventDate(ticket.eventDate)} at {ticket.eventTime}
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Status</p>
-                        <p className="font-medium text-slate-950">
+                        <p className="text-stone-500">Status</p>
+                        <p className="font-medium text-stone-950">
                           {ticket.status} / {ticket.checkedIn ? "Sudah check-in" : "Belum check-in"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Kode</p>
-                        <p className="break-all font-mono font-semibold text-slate-950">
+                        <p className="text-stone-500">Kode</p>
+                        <p className="break-all font-mono font-semibold text-stone-950">
                           {ticket.ticketCode}
                         </p>
                       </div>

@@ -1,4 +1,5 @@
 import { loginOrganizer } from "@/app/actions/organizer";
+import { LockKeyhole } from "lucide-react";
 
 type OrganizerAccessProps = {
   redirectTo: string;
@@ -13,19 +14,22 @@ export const OrganizerAccess = ({
   title,
   description,
 }: OrganizerAccessProps) => (
-  <div className="mx-auto w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-    <h2 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h2>
-    <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+  <div className="mx-auto w-full max-w-md rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-xl">
+    <div className="mb-4 grid h-11 w-11 place-items-center rounded-md bg-stone-950 text-white">
+      <LockKeyhole className="h-5 w-5" aria-hidden="true" />
+    </div>
+    <h2 className="text-xl font-semibold tracking-tight text-stone-950">{title}</h2>
+    <p className="mt-2 text-sm leading-6 text-stone-600">{description}</p>
     {!redirectTo ? null : (
       <form action={loginOrganizer} className="mt-5 space-y-4">
         <input type="hidden" name="redirectTo" value={redirectTo} />
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">PIN organizer</span>
+          <span className="text-sm font-medium text-stone-700">PIN organizer</span>
           <input
             name="pin"
             type="password"
             required
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm outline-none focus:border-teal-700"
             placeholder="Masukkan PIN"
           />
         </label>
@@ -36,7 +40,7 @@ export const OrganizerAccess = ({
         ) : null}
         <button
           type="submit"
-          className="w-full rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+          className="w-full rounded-md bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-stone-800"
         >
           Masuk sebagai organizer
         </button>
