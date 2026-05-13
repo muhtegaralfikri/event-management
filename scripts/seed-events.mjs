@@ -16,6 +16,7 @@ const eventTemplates = [
     date: "2026-06-12T09:00:00+07:00",
     time: "09:00",
     location: "Balai Kartini, Jakarta",
+    category: "TECHNOLOGY",
     price: "250000.00",
     capacity: 180,
     image: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80",
@@ -28,6 +29,7 @@ const eventTemplates = [
     date: "2026-06-19T10:00:00+07:00",
     time: "10:00",
     location: "The Hallway Space, Bandung",
+    category: "DESIGN",
     price: "0.00",
     capacity: 90,
     image: "https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&w=1200&q=80",
@@ -40,6 +42,7 @@ const eventTemplates = [
     date: "2026-06-26T13:30:00+07:00",
     time: "13:30",
     location: "Grand Darmo Suite, Surabaya",
+    category: "TECHNOLOGY",
     price: "175000.00",
     capacity: 140,
     image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80",
@@ -52,6 +55,7 @@ const eventTemplates = [
     date: "2026-07-03T18:30:00+08:00",
     time: "18:30",
     location: "Nipah Park, Makassar",
+    category: "COMMUNITY",
     price: "0.00",
     capacity: 120,
     image: "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80",
@@ -64,6 +68,7 @@ const eventTemplates = [
     date: "2026-07-10T09:30:00+07:00",
     time: "09:30",
     location: "Royal Ambarrukmo, Yogyakarta",
+    category: "BUSINESS",
     price: "300000.00",
     capacity: 160,
     image: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
@@ -76,6 +81,7 @@ const eventTemplates = [
     date: "2026-07-17T08:30:00+08:00",
     time: "08:30",
     location: "Jimbaran Hub, Bali",
+    category: "WORKSHOP",
     price: "450000.00",
     capacity: 100,
     image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80",
@@ -88,6 +94,7 @@ const eventTemplates = [
     date: "2026-07-24T14:00:00+07:00",
     time: "14:00",
     location: "Cambridge Hotel, Medan",
+    category: "SEMINAR",
     price: "125000.00",
     capacity: 110,
     image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
@@ -100,6 +107,7 @@ const eventTemplates = [
     date: "2026-08-01T19:30:00+07:00",
     time: "19:30",
     location: "https://meet.eventtix.local/startup-finance-basics",
+    category: "BUSINESS",
     price: "0.00",
     capacity: 250,
     image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
@@ -112,6 +120,7 @@ const eventTemplates = [
     date: "2026-08-08T15:00:00+07:00",
     time: "15:00",
     location: "PO Hotel, Semarang",
+    category: "DESIGN",
     price: "220000.00",
     capacity: 80,
     image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
@@ -124,6 +133,7 @@ const eventTemplates = [
     date: "2026-08-15T18:00:00+07:00",
     time: "18:00",
     location: "Nagoya Hill, Batam",
+    category: "NETWORKING",
     price: "50000.00",
     capacity: 130,
     image: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80",
@@ -174,11 +184,11 @@ const run = async () => {
       await client.query(
         `
           INSERT INTO events (
-            id, title, slug, description, date, time, location, price, capacity, image,
+            id, title, slug, description, date, time, location, category, price, capacity, image,
             "organizerId", "createdAt", "updatedAt"
           )
           VALUES (
-            $1, $2, $3, $4, $5::timestamp, $6, $7, $8::decimal, $9, $10, $11, NOW(), NOW()
+            $1, $2, $3, $4, $5::timestamp, $6, $7, $8::"EventCategory", $9::decimal, $10, $11, $12, NOW(), NOW()
           )
           ON CONFLICT (slug) DO NOTHING
         `,
@@ -190,6 +200,7 @@ const run = async () => {
           event.date,
           event.time,
           event.location,
+          event.category,
           event.price,
           event.capacity,
           event.image,
