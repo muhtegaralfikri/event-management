@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTicketByCode } from "@/app/actions/registrations";
+import { RegistrationStatus } from "@/generated/prisma/enums";
 import { SiteHeader } from "@/components/shared/site-header";
-import { formatEventDate } from "@/lib/format";
+import { formatCurrency, formatEventDate } from "@/lib/format";
 
 type TicketPageProps = {
   params: Promise<{
@@ -19,6 +20,8 @@ export default async function TicketPage({ params }: TicketPageProps) {
   if (!ticket) {
     notFound();
   }
+
+  const isPendingPayment = ticket.status === RegistrationStatus.PENDING;
 
   return (
     <>
@@ -57,9 +60,19 @@ export default async function TicketPage({ params }: TicketPageProps) {
                   <p className="text-sm text-slate-500">Status</p>
                   <p className="mt-1 font-medium text-slate-950">{ticket.status}</p>
                   <p className="text-sm text-slate-600">
-                    {ticket.checkedIn ? "Sudah check-in" : "Belum check-in"}
+                    {isPendingPayment
+                      ? "Menunggu pembayaran"
+                      : ticket.checkedIn
+                        ? "Sudah check-in"
+                        : "Belum check-in"}
                   </p>
                 </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Harga tiket</p>
+                <p className="mt-1 font-semibold text-slate-950">
+                  {formatCurrency(ticket.eventPrice)}
+                </p>
               </div>
               <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
                 <div>
@@ -76,9 +89,19 @@ export default async function TicketPage({ params }: TicketPageProps) {
               <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
                 <p className="font-mono text-sm font-semibold text-slate-950">{ticket.ticketCode}</p>
                 <p className="mt-2 text-sm text-slate-600">
-                  QR code akan memakai kode ini pada iterasi check-in berikutnya.
+                  {isPendingPayment
+                    ? "Selesaikan pembayaran simulasi agar tiket aktif untuk check-in."
+                    : "QR code akan memakai kode ini pada iterasi check-in berikutnya."}
                 </p>
               </div>
+              {isPendingPayment ? (
+                <Link
+                  href={`/payments/${ticket.ticketCode}`}
+                  className="rounded-md bg-slate-950 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  Lanjutkan pembayaran
+                </Link>
+              ) : null}
             </div>
           </article>
         </section>

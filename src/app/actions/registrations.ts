@@ -13,6 +13,7 @@ export type TicketDetail = {
   status: string;
   checkedIn: boolean;
   createdAt: Date;
+  eventPrice: string;
   attendeeName: string;
   attendeeEmail: string;
   eventTitle: string;
@@ -57,6 +58,7 @@ const ticketSelect = {
       date: true,
       time: true,
       location: true,
+      price: true,
       organizer: {
         select: {
           name: true,
@@ -76,6 +78,7 @@ const mapTicket = (ticket: TicketWithRelations): TicketDetail => ({
   status: ticket.status,
   checkedIn: ticket.checkedIn,
   createdAt: ticket.createdAt,
+  eventPrice: ticket.event.price.toString(),
   attendeeName: ticket.user.name,
   attendeeEmail: ticket.user.email,
   eventTitle: ticket.event.title,
@@ -103,6 +106,7 @@ export const registerForEvent = async (formData: FormData) => {
       select: {
         id: true,
         slug: true,
+        price: true,
         capacity: true,
         registrations: {
           where: {
@@ -148,11 +152,12 @@ export const registerForEvent = async (formData: FormData) => {
       },
       select: {
         ticketCode: true,
+        status: true,
       },
     });
 
     if (existingRegistration) {
-      return existingRegistration.ticketCode;
+      return existingRegistration;
     }
 
     const registration = await tx.registration.create({
@@ -160,18 +165,23 @@ export const registerForEvent = async (formData: FormData) => {
         userId: user.id,
         eventId,
         ticketCode: createTicketCode(event.slug),
-        status: RegistrationStatus.PAID,
+        status: event.price.equals(0) ? RegistrationStatus.PAID : RegistrationStatus.PENDING,
       },
       select: {
         ticketCode: true,
+        status: true,
       },
     });
 
-    return registration.ticketCode;
+    return registration;
   });
 
   revalidatePath("/");
-  redirect(`/tickets/${ticketCode}`);
+  redirect(
+    ticketCode.status === RegistrationStatus.PENDING
+      ? `/payments/${ticketCode.ticketCode}`
+      : `/tickets/${ticketCode.ticketCode}`,
+  );
 };
 
 export const getTicketByCode = async (ticketCode: string): Promise<TicketDetail | null> => {
@@ -183,4 +193,25 @@ export const getTicketByCode = async (ticketCode: string): Promise<TicketDetail 
   });
 
   return ticket ? mapTicket(ticket) : null;
+};
+
+export const payRegistration = async (formData: FormData) => {
+  const ticketCode = normalizeText(formData.get("ticketCode"));
+
+  if (!ticketCode) {
+    throw new Error("Kode tiket wajib ada.");
+  }
+
+  await prisma.registration.update({
+    where: {
+      ticketCode,
+    },
+    data: {
+      status: RegistrationStatus.PAID,
+    },
+  });
+
+  revalidatePath(`/payments/${ticketCode}`);
+  revalidatePath(`/tickets/${ticketCode}`);
+  redirect(`/tickets/${ticketCode}`);
 };

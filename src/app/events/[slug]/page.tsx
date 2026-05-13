@@ -39,6 +39,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   }
 
   const remainingSeats = Math.max(event.capacity - event.registeredCount, 0);
+  const isFreeEvent = Number(event.price) === 0;
 
   return (
     <>
@@ -77,7 +78,9 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-950">Daftar event</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Tiket digital akan dibuat setelah registrasi berhasil.
+                {isFreeEvent
+                  ? "Event gratis akan langsung menerbitkan tiket digital."
+                  : "Event berbayar akan masuk ke pembayaran simulasi sebelum tiket aktif."}
               </p>
               <form action={registerForEvent} className="mt-5 space-y-4">
                 <input type="hidden" name="eventId" value={event.id} />
@@ -105,7 +108,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                   disabled={remainingSeats === 0}
                   className="w-full rounded-md bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {remainingSeats === 0 ? "Kapasitas penuh" : "Daftar dan buat tiket"}
+                  {remainingSeats === 0
+                    ? "Kapasitas penuh"
+                    : isFreeEvent
+                      ? "Daftar gratis"
+                      : "Lanjut ke pembayaran"}
                 </button>
               </form>
               <div className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-600">

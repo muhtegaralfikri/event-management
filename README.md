@@ -8,6 +8,8 @@ Current MVP slice:
 - Event detail page with dynamic metadata
 - Temporary organizer form to create events
 - Server-side attendee registration
+- Free event flow: registration directly issues a paid/active ticket
+- Paid event flow: registration creates a pending ticket and redirects to simulated payment
 - Digital ticket page with unique ticket code
 
 ## Local Development
