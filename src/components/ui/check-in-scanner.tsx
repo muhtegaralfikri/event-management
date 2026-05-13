@@ -1,118 +1,111 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-type Barcode = {
-  rawValue: string;
-};
-
-type BarcodeDetectorInstance = {
-  detect: (source: HTMLVideoElement) => Promise<Barcode[]>;
-};
-
-type BarcodeDetectorConstructor = new (options: {
-  formats: string[];
-}) => BarcodeDetectorInstance;
-
-type WindowWithBarcodeDetector = Window & {
-  BarcodeDetector?: BarcodeDetectorConstructor;
-};
+import {
+  Html5Qrcode,
+  Html5QrcodeScannerState,
+  Html5QrcodeSupportedFormats,
+} from "html5-qrcode";
 
 type CheckInScannerProps = {
   action: (formData: FormData) => void;
 };
 
+const scannerElementId = "eventtix-check-in-scanner";
+
 export const CheckInScanner = ({ action }: CheckInScannerProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [ticketCode, setTicketCode] = useState("");
-  const [message, setMessage] = useState("Arahkan kamera ke QR code tiket.");
+  const [message, setMessage] = useState("Klik mulai scan untuk membuka kamera.");
   const [isScanning, setIsScanning] = useState(false);
 
-  const stopScanner = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
+  const stopScanner = async () => {
+    const scanner = scannerRef.current;
 
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setIsScanning(false);
-  };
-
-  useEffect(() => stopScanner, []);
-
-  const startScanner = async () => {
-    const barcodeDetector = (window as WindowWithBarcodeDetector).BarcodeDetector;
-
-    if (!barcodeDetector) {
-      setMessage("Browser ini belum mendukung scanner kamera. Pakai input manual di bawah.");
+    if (!scanner) {
+      setIsScanning(false);
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-        },
-        audio: false,
-      });
-      const detector = new barcodeDetector({ formats: ["qr_code"] });
-      const video = videoRef.current;
-
-      if (!video) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
+      if (scanner.getState() === Html5QrcodeScannerState.SCANNING) {
+        await scanner.stop();
       }
 
-      streamRef.current = stream;
-      video.srcObject = stream;
-      await video.play();
-      setIsScanning(true);
-      setMessage("Scanner aktif. Arahkan kamera ke QR code tiket.");
+      scanner.clear();
+    } catch {
+      setMessage("Scanner berhenti, tetapi browser tidak mengembalikan status kamera lengkap.");
+    } finally {
+      scannerRef.current = null;
+      setIsScanning(false);
+    }
+  };
 
-      const scan = async () => {
-        const currentVideo = videoRef.current;
+  useEffect(() => {
+    return () => {
+      void stopScanner();
+    };
+  }, []);
 
-        if (!currentVideo || !streamRef.current) {
-          return;
-        }
+  const startScanner = async () => {
+    if (isScanning) {
+      return;
+    }
 
-        const codes = await detector.detect(currentVideo);
-        const code = codes[0]?.rawValue.trim();
+    await stopScanner();
 
-        if (code) {
+    const scanner = new Html5Qrcode(scannerElementId, {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      useBarCodeDetectorIfSupported: true,
+      verbose: false,
+    });
+
+    scannerRef.current = scanner;
+
+    try {
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 240, height: 240 },
+          aspectRatio: 1,
+          disableFlip: false,
+        },
+        (decodedText) => {
+          const code = decodedText.trim();
+
+          if (!code) {
+            return;
+          }
+
           setTicketCode(code);
           setMessage(`Kode terbaca: ${code}`);
-          stopScanner();
+          void stopScanner();
           window.setTimeout(() => formRef.current?.requestSubmit(), 150);
-          return;
-        }
+        },
+        () => {
+          // Frame tanpa QR code adalah kondisi normal saat kamera sedang mencari kode.
+        },
+      );
 
-        animationFrameRef.current = requestAnimationFrame(() => {
-          void scan();
-        });
-      };
-
-      void scan();
+      setIsScanning(true);
+      setMessage("Scanner aktif. Arahkan kamera ke QR code tiket.");
     } catch {
-      setMessage("Kamera tidak bisa diakses. Periksa izin kamera atau pakai input manual.");
-      stopScanner();
+      scannerRef.current = null;
+      setIsScanning(false);
+      setMessage(
+        "Kamera tidak bisa dibuka. Pastikan izin kamera aktif, gunakan HTTPS/localhost, atau pakai input manual.",
+      );
     }
   };
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="overflow-hidden rounded-lg bg-slate-950">
-        <video
-          ref={videoRef}
-          className="aspect-video w-full object-cover"
-          muted
-          playsInline
-        />
-      </div>
+      <div
+        id={scannerElementId}
+        className="min-h-72 overflow-hidden rounded-lg bg-slate-950 [&_video]:aspect-square [&_video]:w-full [&_video]:object-cover"
+      />
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -125,7 +118,7 @@ export const CheckInScanner = ({ action }: CheckInScannerProps) => {
         </button>
         <button
           type="button"
-          onClick={stopScanner}
+          onClick={() => void stopScanner()}
           className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
           Stop
