@@ -2,6 +2,14 @@
 
 Event management system built with Next.js App Router, Tailwind CSS v4, PostgreSQL, and Prisma.
 
+Current MVP slice:
+
+- Event discovery landing page
+- Event detail page with dynamic metadata
+- Temporary organizer form to create events
+- Server-side attendee registration
+- Digital ticket page with unique ticket code
+
 ## Local Development
 
 Install dependencies:
