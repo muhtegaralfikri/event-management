@@ -24,6 +24,17 @@ export type TicketDetail = {
   organizerName: string;
 };
 
+export type TicketLookupItem = {
+  ticketCode: string;
+  status: string;
+  checkedIn: boolean;
+  createdAt: Date;
+  eventTitle: string;
+  eventSlug: string;
+  eventDate: Date;
+  eventTime: string;
+};
+
 const normalizeText = (value: FormDataEntryValue | null) =>
   typeof value === "string" ? value.trim() : "";
 
@@ -193,6 +204,65 @@ export const getTicketByCode = async (ticketCode: string): Promise<TicketDetail 
   });
 
   return ticket ? mapTicket(ticket) : null;
+};
+
+export const getTicketsByEmail = async (email: string): Promise<TicketLookupItem[]> => {
+  const attendeeEmail = email.trim().toLowerCase();
+
+  if (!isValidEmail(attendeeEmail)) {
+    return [];
+  }
+
+  const tickets = await prisma.registration.findMany({
+    where: {
+      user: {
+        email: attendeeEmail,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      ticketCode: true,
+      status: true,
+      checkedIn: true,
+      createdAt: true,
+      event: {
+        select: {
+          title: true,
+          slug: true,
+          date: true,
+          time: true,
+        },
+      },
+    },
+  });
+
+  return tickets.map((ticket) => ({
+    ticketCode: ticket.ticketCode,
+    status: ticket.status,
+    checkedIn: ticket.checkedIn,
+    createdAt: ticket.createdAt,
+    eventTitle: ticket.event.title,
+    eventSlug: ticket.event.slug,
+    eventDate: ticket.event.date,
+    eventTime: ticket.event.time,
+  }));
+};
+
+export const findTicket = async (formData: FormData) => {
+  const ticketCode = normalizeText(formData.get("ticketCode")).toUpperCase();
+  const email = normalizeText(formData.get("email")).toLowerCase();
+
+  if (ticketCode) {
+    redirect(`/tickets/${ticketCode}`);
+  }
+
+  if (email) {
+    redirect(`/tickets?email=${encodeURIComponent(email)}`);
+  }
+
+  redirect("/tickets?result=empty");
 };
 
 export const payRegistration = async (formData: FormData) => {

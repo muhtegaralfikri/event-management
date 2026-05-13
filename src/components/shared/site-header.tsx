@@ -10,6 +10,9 @@ export const SiteHeader = () => (
         <Link href="/" className="rounded-md px-3 py-2 hover:bg-slate-100">
           Event
         </Link>
+        <Link href="/tickets" className="rounded-md px-3 py-2 hover:bg-slate-100">
+          Cari Tiket
+        </Link>
         <Link href="/organizer/check-in" className="rounded-md px-3 py-2 hover:bg-slate-100">
           Scan Tiket
         </Link>

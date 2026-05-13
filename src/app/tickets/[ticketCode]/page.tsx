@@ -32,10 +32,10 @@ export default async function TicketPage({ params }: TicketPageProps) {
         <section className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
           <div className="mb-6">
             <Link
-              href={`/events/${ticket.eventSlug}`}
+              href="/tickets"
               className="text-sm font-medium text-teal-700 hover:text-teal-900"
             >
-              Kembali ke detail event
+              Cari tiket lain
             </Link>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
               Tiket digital

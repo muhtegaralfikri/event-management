@@ -11,6 +11,7 @@ Current MVP slice:
 - Free event flow: registration directly issues a paid/active ticket
 - Paid event flow: registration creates a pending ticket and redirects to simulated payment
 - Digital ticket page with unique ticket code and QR code
+- Ticket lookup page by ticket code or attendee email
 - Organizer check-in page for QR scanning and manual ticket validation
 
 ## Local Development
