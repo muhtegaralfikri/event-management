@@ -8,6 +8,13 @@ import { UserRole } from "@/generated/prisma/enums";
 
 const googleClientId = process.env.AUTH_GOOGLE_ID?.trim();
 const googleClientSecret = process.env.AUTH_GOOGLE_SECRET?.trim();
+const organizerGoogleEmails = (process.env.AUTH_ORGANIZER_GOOGLE_EMAILS ?? "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
+const isAllowedGoogleOrganizer = (email?: string | null) =>
+  Boolean(email && organizerGoogleEmails.includes(email.toLowerCase()));
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(getPrisma()),
@@ -79,6 +86,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ account, profile }) {
+      if (account?.provider !== "google") {
+        return true;
+      }
+
+      return isAllowedGoogleOrganizer(profile?.email);
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
