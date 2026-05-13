@@ -6,23 +6,30 @@ import { getPrisma } from "./prisma";
 import { verifyPassword } from "./password";
 import { UserRole } from "@/generated/prisma/enums";
 
+const googleClientId = process.env.AUTH_GOOGLE_ID?.trim();
+const googleClientSecret = process.env.AUTH_GOOGLE_SECRET?.trim();
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(getPrisma()),
   session: { strategy: "jwt" },
   providers: [
-    GoogleProvider({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-          role: UserRole.ATTENDEE, // default role for google sign in
-        };
-      },
-    }),
+    ...(googleClientId && googleClientSecret
+      ? [
+          GoogleProvider({
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+            profile(profile) {
+              return {
+                id: profile.sub,
+                name: profile.name,
+                email: profile.email,
+                image: profile.picture,
+                role: UserRole.ATTENDEE,
+              };
+            },
+          }),
+        ]
+      : []),
     CredentialsProvider({
       credentials: {
         email: { label: "Email", type: "email" },
