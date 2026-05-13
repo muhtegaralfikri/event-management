@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import type { Prisma } from "@/generated/prisma/client";
 import { RegistrationStatus, UserRole } from "@/generated/prisma/enums";
@@ -110,6 +110,7 @@ export const registerForEvent = async (formData: FormData) => {
     throw new Error("Nama dan email valid wajib diisi.");
   }
 
+  const prisma = getPrisma();
   const ticketCode = await prisma.$transaction(async (tx) => {
     const event = await tx.event.findUnique({
       where: {
@@ -197,6 +198,7 @@ export const registerForEvent = async (formData: FormData) => {
 };
 
 export const getTicketByCode = async (ticketCode: string): Promise<TicketDetail | null> => {
+  const prisma = getPrisma();
   const ticket = await prisma.registration.findUnique({
     where: {
       ticketCode,
@@ -214,6 +216,7 @@ export const getTicketsByEmail = async (email: string): Promise<TicketLookupItem
     return [];
   }
 
+  const prisma = getPrisma();
   const tickets = await prisma.registration.findMany({
     where: {
       user: {
@@ -273,6 +276,7 @@ export const payRegistration = async (formData: FormData) => {
     throw new Error("Kode tiket wajib ada.");
   }
 
+  const prisma = getPrisma();
   await prisma.registration.update({
     where: {
       ticketCode,
@@ -298,6 +302,7 @@ export const checkInTicket = async (formData: FormData) => {
     redirect("/organizer/check-in?result=empty");
   }
 
+  const prisma = getPrisma();
   const ticket = await prisma.registration.findUnique({
     where: {
       ticketCode,

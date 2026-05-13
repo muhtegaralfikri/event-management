@@ -67,7 +67,13 @@ export default async function CheckInPage({ searchParams }: CheckInPageProps) {
   const isAuthorized = await isOrganizerAuthorized();
   const hasPin = hasOrganizerPinConfigured();
   const resultCopy = getResultCopy(result);
-  const ticket = isAuthorized && code ? await getTicketByCode(code) : null;
+  let ticket = null as Awaited<ReturnType<typeof getTicketByCode>>;
+
+  try {
+    ticket = isAuthorized && code ? await getTicketByCode(code) : null;
+  } catch {
+    ticket = null;
+  }
 
   return (
     <>
@@ -149,6 +155,13 @@ export default async function CheckInPage({ searchParams }: CheckInPageProps) {
                       </div>
                     </div>
                   </article>
+                ) : code ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-950">
+                    <p className="font-semibold">Detail tiket tidak bisa dimuat.</p>
+                    <p className="mt-1 text-sm">
+                      Periksa koneksi database di Vercel atau coba scan ulang setelah database aktif.
+                    </p>
+                  </div>
                 ) : null}
               </div>
 

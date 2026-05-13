@@ -17,10 +17,36 @@ export const dynamic = "force-dynamic";
 
 export default async function TicketPage({ params }: TicketPageProps) {
   const { ticketCode } = await params;
-  const ticket = await getTicketByCode(ticketCode);
+  let ticket: Awaited<ReturnType<typeof getTicketByCode>> = null;
+  let databaseUnavailable = false;
+
+  try {
+    ticket = await getTicketByCode(ticketCode);
+  } catch {
+    databaseUnavailable = true;
+  }
 
   if (!ticket) {
-    notFound();
+    if (!databaseUnavailable) {
+      return notFound();
+    }
+
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen">
+          <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
+              <h1 className="text-2xl font-semibold">Tiket belum bisa dimuat</h1>
+              <p className="mt-2 text-sm leading-6">
+                Cek koneksi database di Vercel. Jika tiket ada tetapi database offline, halaman ini
+                tidak bisa mengambil detailnya.
+              </p>
+            </div>
+          </section>
+        </main>
+      </>
+    );
   }
 
   const isPendingPayment = ticket.status === RegistrationStatus.PENDING;

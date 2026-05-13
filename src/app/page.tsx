@@ -6,7 +6,15 @@ import { CalendarCheck, CreditCard, QrCode, Ticket } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const events = await getActiveEvents();
+  let events: Awaited<ReturnType<typeof getActiveEvents>> = [];
+  let databaseError: string | null = null;
+
+  try {
+    events = await getActiveEvents();
+  } catch (error) {
+    databaseError = error instanceof Error ? error.message : "Koneksi database gagal.";
+  }
+
   const paidEvents = events.filter((event) => Number(event.price) > 0).length;
   const freeEvents = events.length - paidEvents;
   const registeredCount = events.reduce((total, event) => total + event.registeredCount, 0);
@@ -47,6 +55,15 @@ export default async function Home() {
                   </p>
                 </div>
               </div>
+              {databaseError ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                  <p className="font-semibold">Data event belum bisa dimuat.</p>
+                  <p className="mt-1">
+                    Periksa environment Vercel, terutama <code>DATABASE_URL</code> dan koneksi PostgreSQL.
+                  </p>
+                  <p className="mt-1 break-all font-mono text-xs text-amber-900">{databaseError}</p>
+                </div>
+              ) : null}
             </div>
             <div className="grid gap-3 rounded-lg border border-stone-200 bg-stone-950 p-4 text-white shadow-xl sm:grid-cols-2">
               <div className="rounded-md bg-white/10 p-4">
@@ -78,7 +95,15 @@ export default async function Home() {
             </div>
           </div>
 
-          {events.length > 0 ? (
+          {databaseError ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950 shadow-sm">
+              <h3 className="text-lg font-semibold">Database belum terhubung</h3>
+              <p className="mt-2 text-sm leading-6">
+                Halaman ini membutuhkan <code>DATABASE_URL</code> yang valid di Vercel dan database
+                PostgreSQL yang bisa diakses dari internet.
+              </p>
+            </div>
+          ) : events.length > 0 ? (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {events.map((event) => (
                 <EventCard key={event.id} event={event} />

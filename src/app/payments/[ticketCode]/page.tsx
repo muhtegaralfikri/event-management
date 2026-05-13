@@ -16,10 +16,35 @@ export const dynamic = "force-dynamic";
 
 export default async function PaymentPage({ params }: PaymentPageProps) {
   const { ticketCode } = await params;
-  const ticket = await getTicketByCode(ticketCode);
+  let ticket: Awaited<ReturnType<typeof getTicketByCode>> = null;
+  let databaseUnavailable = false;
+
+  try {
+    ticket = await getTicketByCode(ticketCode);
+  } catch {
+    databaseUnavailable = true;
+  }
 
   if (!ticket) {
-    notFound();
+    if (!databaseUnavailable) {
+      return notFound();
+    }
+
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen">
+          <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
+              <h1 className="text-2xl font-semibold">Pembayaran belum bisa dimuat</h1>
+              <p className="mt-2 text-sm leading-6">
+                Periksa konfigurasi database Vercel sebelum mencoba membuka halaman pembayaran.
+              </p>
+            </div>
+          </section>
+        </main>
+      </>
+    );
   }
 
   const isPaid = ticket.status === RegistrationStatus.PAID;

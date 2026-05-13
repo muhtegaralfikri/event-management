@@ -17,26 +17,58 @@ export const dynamic = "force-dynamic";
 
 export const generateMetadata = async ({ params }: EventDetailPageProps): Promise<Metadata> => {
   const { slug } = await params;
-  const event = await getEventDetailBySlug(slug);
+  try {
+    const event = await getEventDetailBySlug(slug);
 
-  if (!event) {
+    if (!event) {
+      return {
+        title: "Event tidak ditemukan | EventTix",
+      };
+    }
+
     return {
-      title: "Event tidak ditemukan | EventTix",
+      title: `${event.title} | EventTix`,
+      description: event.description,
+    };
+  } catch {
+    return {
+      title: "Event Tix | EventTix",
     };
   }
-
-  return {
-    title: `${event.title} | EventTix`,
-    description: event.description,
-  };
 };
 
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { slug } = await params;
-  const event = await getEventDetailBySlug(slug);
+  let event: Awaited<ReturnType<typeof getEventDetailBySlug>> = null;
+  let databaseUnavailable = false;
+
+  try {
+    event = await getEventDetailBySlug(slug);
+  } catch {
+    databaseUnavailable = true;
+  }
 
   if (!event) {
-    notFound();
+    if (!databaseUnavailable) {
+      return notFound();
+    }
+
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen">
+          <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
+              <h1 className="text-2xl font-semibold">Detail event belum bisa dimuat</h1>
+              <p className="mt-2 text-sm leading-6">
+                Cek koneksi database di Vercel. Jika <code>DATABASE_URL</code> tidak tersedia atau
+                database tidak bisa diakses, halaman ini akan berhenti di sini.
+              </p>
+            </div>
+          </section>
+        </main>
+      </>
+    );
   }
 
   const remainingSeats = Math.max(event.capacity - event.registeredCount, 0);

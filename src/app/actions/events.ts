@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import type { Prisma } from "@/generated/prisma/client";
 import { UserRole } from "@/generated/prisma/enums";
@@ -86,6 +86,7 @@ const mapEvent = (event: EventWithSummary): EventListItem => ({
 });
 
 export const getActiveEvents = async (): Promise<EventListItem[]> => {
+  const prisma = getPrisma();
   const events = await prisma.event.findMany({
     orderBy: {
       date: "asc",
@@ -97,6 +98,7 @@ export const getActiveEvents = async (): Promise<EventListItem[]> => {
 };
 
 export const getEventDetailBySlug = async (slug: string): Promise<EventDetail | null> => {
+  const prisma = getPrisma();
   const event = await prisma.event.findUnique({
     where: {
       slug,
@@ -147,6 +149,7 @@ export const createEvent = async (formData: FormData) => {
     throw new Error("Judul atau tanggal event tidak valid.");
   }
 
+  const prisma = getPrisma();
   const organizer = await prisma.user.upsert({
     where: {
       email: "organizer@eventtix.local",

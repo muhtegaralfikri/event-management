@@ -15,7 +15,14 @@ export const dynamic = "force-dynamic";
 
 export default async function TicketsLookupPage({ searchParams }: TicketsLookupPageProps) {
   const { email, result } = await searchParams;
-  const tickets = email ? await getTicketsByEmail(email) : [];
+  let tickets: Awaited<ReturnType<typeof getTicketsByEmail>> = [];
+  let databaseError: string | null = null;
+
+  try {
+    tickets = email ? await getTicketsByEmail(email) : [];
+  } catch (error) {
+    databaseError = error instanceof Error ? error.message : "Koneksi database gagal.";
+  }
 
   return (
     <>
@@ -78,6 +85,14 @@ export default async function TicketsLookupPage({ searchParams }: TicketsLookupP
 
           <div className="rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-stone-950">Hasil pencarian</h2>
+            {databaseError ? (
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                <p className="font-semibold">Database belum terhubung.</p>
+                <p className="mt-1">
+                  Pastikan environment Vercel memiliki <code>DATABASE_URL</code> yang benar.
+                </p>
+              </div>
+            ) : null}
             {!email ? (
               <p className="mt-2 text-sm text-stone-600">
                 Masukkan email untuk menampilkan tiket yang pernah didaftarkan.
