@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "EventTix",
   description: "Platform event management dan tiket digital.",
+  icons: {
+    icon: "/eventtix-icon.png",
+    shortcut: "/eventtix-icon.png",
+    apple: "/eventtix-icon.png",
+  },
 };
 
 import { SessionProvider } from "next-auth/react";

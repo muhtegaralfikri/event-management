@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CalendarDays, CalendarPlus, LayoutDashboard, LogIn, QrCode, Search } from "lucide-react";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { auth } from "@/lib/auth";
@@ -11,11 +12,15 @@ export const SiteHeader = async () => {
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-[#fffdf8]/90 backdrop-blur-xl">
       <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-3 text-lg font-semibold tracking-tight text-stone-950">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-teal-700 text-white shadow-sm">
-            <CalendarDays className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <span>EventTix</span>
+        <Link href="/" className="flex items-center" aria-label="EventTix home">
+          <Image
+            src="/eventtix-logo.png"
+            alt="EventTix"
+            width={360}
+            height={107}
+            priority
+            className="h-10 w-auto"
+          />
         </Link>
         <nav className="hidden items-center gap-2 text-sm font-medium text-stone-700 lg:flex">
           <Link href="/" className="inline-flex items-center gap-2 rounded-md px-3 py-2 hover:bg-stone-100">
