@@ -18,12 +18,12 @@ export const UserMenu = ({ user }: UserMenuProps) => {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex min-w-0 items-center gap-2 rounded-full border border-stone-200 bg-white p-1 pr-3 shadow-sm">
+      <div className="flex min-w-0 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 shadow-sm">
         {user.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.image} alt={user.name || "User"} className="h-7 w-7 rounded-full object-cover" />
+          <img src={user.image} alt={user.name || "User"} className="h-5 w-5 rounded-md object-cover" />
         ) : (
-          <div className="grid h-7 w-7 place-items-center rounded-full bg-teal-100 text-teal-800">
+          <div className="grid h-5 w-5 place-items-center rounded-md bg-teal-100 text-teal-800">
             <UserIcon className="h-4 w-4" aria-hidden="true" />
           </div>
         )}

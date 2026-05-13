@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/shared/site-header";
 import { EventCard } from "@/components/ui/event-card";
 import { CalendarCheck, CreditCard, QrCode, Ticket, Search as SearchIcon } from "lucide-react";
 import { EventCategory } from "@/generated/prisma/enums";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function Home({ searchParams }: Props) {
   const paidEvents = events.filter((event) => Number(event.price) > 0).length;
   const freeEvents = events.length - paidEvents;
   const registeredCount = events.reduce((total, event) => total + event.registeredCount, 0);
+  const hasActiveFilter = Boolean(search || category !== "ALL");
 
   const categories = ["ALL", ...Object.values(EventCategory)];
 
@@ -135,6 +137,14 @@ export default async function Home({ searchParams }: Props) {
               >
                 Cari
               </button>
+              {hasActiveFilter ? (
+                <Link
+                  href="/"
+                  className="inline-flex items-center justify-center rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  Reset
+                </Link>
+              ) : null}
             </form>
           </div>
 
@@ -153,6 +163,14 @@ export default async function Home({ searchParams }: Props) {
                 {c === "ALL" ? "Semua" : c}
               </a>
             ))}
+            {hasActiveFilter ? (
+              <Link
+                href="/"
+                className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+              >
+                Reset
+              </Link>
+            ) : null}
           </div>
 
           {databaseError ? (
