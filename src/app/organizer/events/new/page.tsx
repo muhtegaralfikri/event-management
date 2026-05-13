@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createEvent } from "@/app/actions/events";
 import { logoutOrganizer } from "@/app/actions/organizer";
 import { OrganizerAccess } from "@/components/shared/organizer-access";
 import { SiteHeader } from "@/components/shared/site-header";
 import { hasOrganizerPinConfigured, isOrganizerAuthorized } from "@/lib/organizer-auth";
+
+export const metadata: Metadata = {
+  title: "Buat Event Baru | EventTix",
+  description: "Form organizer untuk membuat event baru di EventTix.",
+};
 
 type CreateEventPageProps = {
   searchParams: Promise<{

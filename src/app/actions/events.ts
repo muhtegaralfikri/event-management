@@ -1,10 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import { stripHtmlTags, sanitizeUrl } from "@/lib/sanitize";
+import { normalizeText, normalizeOptionalText } from "@/lib/form-utils";
 import type { Prisma } from "@/generated/prisma/client";
 import { UserRole } from "@/generated/prisma/enums";
 
@@ -25,15 +28,6 @@ export type EventListItem = {
 
 export type EventDetail = EventListItem & {
   organizerEmail: string;
-};
-
-const normalizeText = (value: FormDataEntryValue | null) =>
-  typeof value === "string" ? value.trim() : "";
-
-const normalizeOptionalText = (value: FormDataEntryValue | null) => {
-  const text = normalizeText(value);
-
-  return text.length > 0 ? text : null;
 };
 
 const createSlug = (title: string) =>
@@ -89,6 +83,11 @@ const mapEvent = (event: EventWithSummary): EventListItem => ({
 export const getActiveEvents = async (): Promise<EventListItem[]> => {
   const prisma = getPrisma();
   const events = await prisma.event.findMany({
+    where: {
+      date: {
+        gte: new Date(),
+      },
+    },
     orderBy: {
       date: "asc",
     },
@@ -189,15 +188,12 @@ export const createEvent = async (formData: FormData) => {
     },
   });
 
-  const existingSlugCount = await prisma.event.count({
-    where: {
-      slug: {
-        startsWith: baseSlug,
-      },
-    },
+  const existingSlug = await prisma.event.findUnique({
+    where: { slug: baseSlug },
+    select: { id: true },
   });
 
-  const slug = existingSlugCount === 0 ? baseSlug : `${baseSlug}-${existingSlugCount + 1}`;
+  const slug = existingSlug ? `${baseSlug}-${randomUUID().slice(0, 8)}` : baseSlug;
 
   await prisma.event.create({
     data: {

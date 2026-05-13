@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { organizerLoginLimiter } from "@/lib/rate-limiter";
+import { getClientIdentifier } from "@/lib/form-utils";
 
 const organizerSessionCookieName = "eventtix-organizer-session";
 
@@ -10,24 +11,6 @@ const createOrganizerSessionValue = (pin: string) =>
 const getOrganizerPin = () => process.env.ORGANIZER_CHECKIN_PIN?.trim() ?? "";
 
 export const hasOrganizerPinConfigured = () => getOrganizerPin().length > 0;
-
-/**
- * Ambil identifier client untuk rate limiting.
- * Menggunakan header x-forwarded-for (dari reverse proxy / Vercel)
- * atau fallback ke string statis jika tidak tersedia.
- */
-const getClientIdentifier = async (): Promise<string> => {
-  try {
-    const headerStore = await headers();
-    return (
-      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      headerStore.get("x-real-ip") ??
-      "unknown-client"
-    );
-  } catch {
-    return "unknown-client";
-  }
-};
 
 export const isOrganizerAuthorized = async () => {
   const pin = getOrganizerPin();

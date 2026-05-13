@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTicketByCode, payRegistration } from "@/app/actions/registrations";
@@ -5,6 +6,11 @@ import { RegistrationStatus } from "@/generated/prisma/enums";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatCurrency, formatEventDate } from "@/lib/format";
 import { ArrowLeft, CreditCard } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Pembayaran Tiket | EventTix",
+  description: "Selesaikan pembayaran tiket event Anda.",
+};
 
 type PaymentPageProps = {
   params: Promise<{

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTicketByCode } from "@/app/actions/registrations";
@@ -6,6 +7,11 @@ import { SiteHeader } from "@/components/shared/site-header";
 import { formatCurrency, formatEventDate } from "@/lib/format";
 import { createTicketQrSvg } from "@/lib/qr-code";
 import { ArrowLeft, CalendarClock, MapPin, QrCode } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Tiket Digital | EventTix",
+  description: "Lihat detail tiket digital dan QR code untuk check-in event.",
+};
 
 type TicketPageProps = {
   params: Promise<{

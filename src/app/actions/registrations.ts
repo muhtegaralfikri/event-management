@@ -3,10 +3,10 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
 import { isOrganizerAuthorized } from "@/lib/organizer-auth";
 import { isHoneypotFilled, stripHtmlTags } from "@/lib/sanitize";
+import { normalizeText, getClientIdentifier } from "@/lib/form-utils";
 import { registrationLimiter } from "@/lib/rate-limiter";
 import type { Prisma } from "@/generated/prisma/client";
 import { RegistrationStatus, UserRole } from "@/generated/prisma/enums";
@@ -40,11 +40,6 @@ export type TicketLookupItem = {
   eventTime: string;
 };
 
-const normalizeText = (value: FormDataEntryValue | null) =>
-  typeof value === "string" ? value.trim() : "";
-
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
 const createTicketCode = (slug: string) => {
   const prefix = slug
     .replace(/[^a-z0-9]/gi, "")
@@ -55,21 +50,7 @@ const createTicketCode = (slug: string) => {
   return `EVT-${prefix}-${randomUUID().slice(0, 8).toUpperCase()}`;
 };
 
-/**
- * Ambil identifier client untuk rate limiting.
- */
-const getClientIdentifier = async (): Promise<string> => {
-  try {
-    const headerStore = await headers();
-    return (
-      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      headerStore.get("x-real-ip") ??
-      "unknown-client"
-    );
-  } catch {
-    return "unknown-client";
-  }
-};
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const ticketSelect = {
   id: true,

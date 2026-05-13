@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { findTicket, getTicketsByEmail } from "@/app/actions/registrations";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatEventDate } from "@/lib/format";
 import { Search, TicketCheck } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Cari Tiket | EventTix",
+  description: "Temukan tiket event Anda berdasarkan kode tiket atau email registrasi.",
+};
 
 type TicketsLookupPageProps = {
   searchParams: Promise<{

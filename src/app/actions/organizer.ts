@@ -2,9 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { authorizeOrganizerSession, clearOrganizerSession } from "@/lib/organizer-auth";
-
-const normalizeText = (value: FormDataEntryValue | null) =>
-  typeof value === "string" ? value.trim() : "";
+import { normalizeText } from "@/lib/form-utils";
 
 export const loginOrganizer = async (formData: FormData) => {
   const pin = normalizeText(formData.get("pin"));

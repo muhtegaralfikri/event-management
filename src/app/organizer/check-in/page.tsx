@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutOrganizer } from "@/app/actions/organizer";
 import { checkInTicket, getTicketByCode } from "@/app/actions/registrations";
@@ -7,6 +8,11 @@ import { SiteHeader } from "@/components/shared/site-header";
 import { formatEventDate } from "@/lib/format";
 import { hasOrganizerPinConfigured, isOrganizerAuthorized } from "@/lib/organizer-auth";
 import { ArrowLeft } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Check-in Organizer | EventTix",
+  description: "Scanner QR code untuk check-in tiket peserta event.",
+};
 
 type CheckInPageProps = {
   searchParams: Promise<{
