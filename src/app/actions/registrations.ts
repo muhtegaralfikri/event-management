@@ -215,3 +215,46 @@ export const payRegistration = async (formData: FormData) => {
   revalidatePath(`/tickets/${ticketCode}`);
   redirect(`/tickets/${ticketCode}`);
 };
+
+export const checkInTicket = async (formData: FormData) => {
+  const ticketCode = normalizeText(formData.get("ticketCode")).toUpperCase();
+
+  if (!ticketCode) {
+    redirect("/organizer/check-in?result=empty");
+  }
+
+  const ticket = await prisma.registration.findUnique({
+    where: {
+      ticketCode,
+    },
+    select: {
+      ticketCode: true,
+      status: true,
+      checkedIn: true,
+    },
+  });
+
+  if (!ticket) {
+    redirect(`/organizer/check-in?result=not-found&code=${encodeURIComponent(ticketCode)}`);
+  }
+
+  if (ticket.status !== RegistrationStatus.PAID) {
+    redirect(`/organizer/check-in?result=unpaid&code=${encodeURIComponent(ticketCode)}`);
+  }
+
+  if (ticket.checkedIn) {
+    redirect(`/organizer/check-in?result=duplicate&code=${encodeURIComponent(ticketCode)}`);
+  }
+
+  await prisma.registration.update({
+    where: {
+      ticketCode,
+    },
+    data: {
+      checkedIn: true,
+    },
+  });
+
+  revalidatePath(`/tickets/${ticketCode}`);
+  redirect(`/organizer/check-in?result=success&code=${encodeURIComponent(ticketCode)}`);
+};

@@ -4,6 +4,7 @@ import { getTicketByCode } from "@/app/actions/registrations";
 import { RegistrationStatus } from "@/generated/prisma/enums";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatCurrency, formatEventDate } from "@/lib/format";
+import { createTicketQrSvg } from "@/lib/qr-code";
 
 type TicketPageProps = {
   params: Promise<{
@@ -22,6 +23,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
   }
 
   const isPendingPayment = ticket.status === RegistrationStatus.PENDING;
+  const qrSvg = isPendingPayment ? null : await createTicketQrSvg(ticket.ticketCode);
 
   return (
     <>
@@ -86,14 +88,29 @@ export default async function TicketPage({ params }: TicketPageProps) {
                   <p className="mt-1 font-medium text-slate-950">{ticket.eventLocation}</p>
                 </div>
               </div>
-              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
-                <p className="font-mono text-sm font-semibold text-slate-950">{ticket.ticketCode}</p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {isPendingPayment
-                    ? "Selesaikan pembayaran simulasi agar tiket aktif untuk check-in."
-                    : "QR code akan memakai kode ini pada iterasi check-in berikutnya."}
-                </p>
-              </div>
+              {qrSvg ? (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
+                  <div
+                    className="mx-auto flex h-56 w-56 items-center justify-center rounded-md bg-white p-3 shadow-sm"
+                    dangerouslySetInnerHTML={{ __html: qrSvg }}
+                  />
+                  <p className="mt-4 font-mono text-sm font-semibold text-slate-950">
+                    {ticket.ticketCode}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Tunjukkan QR code ini ke organizer saat check-in.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
+                  <p className="font-mono text-sm font-semibold text-slate-950">
+                    {ticket.ticketCode}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Selesaikan pembayaran simulasi agar QR code aktif untuk check-in.
+                  </p>
+                </div>
+              )}
               {isPendingPayment ? (
                 <Link
                   href={`/payments/${ticket.ticketCode}`}
