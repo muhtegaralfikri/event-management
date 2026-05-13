@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PasswordField } from "@/components/ui/password-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { auth, signIn } from "@/lib/auth";
-import { Mail, KeyRound } from "lucide-react";
+import { Mail } from "lucide-react";
 
 export const metadata = {
   title: "Login Organizer | EventTix",
@@ -68,19 +69,7 @@ export default async function LoginPage({
           </div>
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-stone-700">Password</label>
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-            <input
-              name="password"
-              type="password"
-              required
-              className="w-full rounded-md border border-stone-300 py-2 pl-10 pr-3 outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-700"
-              placeholder="Password"
-            />
-          </div>
-        </div>
+        <PasswordField required />
 
         <SubmitButton
           pendingText="Memproses login..."

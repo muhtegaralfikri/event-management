@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { registerUser } from "@/app/actions/auth";
-import { LoaderCircle, Mail, KeyRound, User } from "lucide-react";
+import { PasswordField } from "@/components/ui/password-field";
+import { LoaderCircle, Mail, User } from "lucide-react";
 
 export default function RegisterPage() {
   const [error, formAction, isPending] = useActionState(async (state: string | null, formData: FormData) => {
@@ -59,20 +60,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-stone-700">Password</label>
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-            <input
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              className="w-full rounded-md border border-stone-300 py-2 pl-10 pr-3 outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-700"
-              placeholder="Minimal 8 karakter"
-            />
-          </div>
-        </div>
+        <PasswordField required minLength={8} placeholder="Minimal 8 karakter" />
 
         <button
           type="submit"
