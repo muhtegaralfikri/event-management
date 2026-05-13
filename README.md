@@ -6,14 +6,15 @@ Current MVP slice:
 
 - Event discovery landing page
 - Event detail page with dynamic metadata
-- Temporary organizer form to create events
-- Server-side attendee registration
+- Organizer account registration and login
+- Organizer event creation and dashboard
+- Server-side guest attendee registration without attendee login
 - Free event flow: registration directly issues a paid/active ticket
 - Paid event flow: registration creates a pending ticket and redirects to simulated payment
 - Digital ticket page with unique ticket code and QR code
-- Ticket lookup page by ticket code or attendee email
+- Public ticket lookup page by ticket code or attendee email
 - Organizer check-in page for QR scanning and manual ticket validation
-- Organizer routes protected by `ORGANIZER_CHECKIN_PIN`
+- Organizer routes protected by organizer login
 
 ## Local Development
 
@@ -29,7 +30,7 @@ For FlyEnv PostgreSQL on this machine:
 
 ```env
 DATABASE_URL="postgresql://root:root@localhost:5432/eventtix?schema=public"
-ORGANIZER_CHECKIN_PIN="123456"
+AUTH_SECRET="generate-random-secret-here"
 ```
 
 Run migrations and start the app:
@@ -65,7 +66,7 @@ Set this environment variable in Vercel for Production and Preview:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
-ORGANIZER_CHECKIN_PIN="strong-secret-pin"
+AUTH_SECRET="generate-random-secret-here"
 ```
 
 For Neon, use the pooled URL for `DATABASE_URL` in Vercel runtime.

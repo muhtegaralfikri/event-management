@@ -36,10 +36,9 @@ export const registerUser = async (formData: FormData) => {
       name,
       email,
       password: hashedPassword,
-      role: UserRole.ATTENDEE,
+      role: UserRole.ORGANIZER,
     },
   });
 
-  // Redirect ke login dengan pesan sukses
   redirect("/login?registered=true");
 };

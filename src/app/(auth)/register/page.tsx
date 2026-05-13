@@ -19,9 +19,11 @@ export default function RegisterPage() {
     <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-8 shadow-sm">
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-stone-950">
-          Buat Akun EventTix
+          Buat Akun Organizer
         </h1>
-        <p className="mt-2 text-sm text-stone-600">Daftar sebagai peserta untuk mengikuti event</p>
+        <p className="mt-2 text-sm text-stone-600">
+          Akun hanya diperlukan untuk penyelenggara yang ingin mengelola event.
+        </p>
       </div>
 
       {error && (
@@ -77,12 +79,12 @@ export default function RegisterPage() {
           disabled={isPending}
           className="mt-6 w-full rounded-md bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-50"
         >
-          {isPending ? "Mendaftar..." : "Daftar"}
+          {isPending ? "Mendaftar..." : "Daftar sebagai organizer"}
         </button>
       </form>
 
       <p className="mt-8 text-center text-sm text-stone-600">
-        Sudah punya akun?{" "}
+        Sudah punya akun organizer?{" "}
         <Link href="/login" className="font-semibold text-teal-700 hover:text-teal-900">
           Masuk di sini
         </Link>

@@ -25,9 +25,9 @@ type RateLimitEntry = {
   timestamps: number[];
 };
 
-const DEFAULT_WINDOW_MS = 15 * 60 * 1000; // 15 menit
+const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_MAX_ATTEMPTS = 5;
-const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000; // 1 menit
+const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000;
 
 export const createRateLimiter = (options?: RateLimiterOptions) => {
   const windowMs = options?.windowMs ?? DEFAULT_WINDOW_MS;
@@ -36,12 +36,10 @@ export const createRateLimiter = (options?: RateLimiterOptions) => {
 
   const store = new Map<string, RateLimitEntry>();
 
-  // Cleanup entry yang sudah expired secara berkala
   const cleanupTimer = setInterval(() => {
     const now = Date.now();
 
     for (const [key, entry] of store) {
-      // Buang timestamp yang sudah lewat window
       entry.timestamps = entry.timestamps.filter((ts) => now - ts < windowMs);
 
       if (entry.timestamps.length === 0) {
@@ -50,7 +48,6 @@ export const createRateLimiter = (options?: RateLimiterOptions) => {
     }
   }, cleanupIntervalMs);
 
-  // Pastikan timer tidak mencegah process exit
   if (cleanupTimer.unref) {
     cleanupTimer.unref();
   }
@@ -69,7 +66,6 @@ export const createRateLimiter = (options?: RateLimiterOptions) => {
       };
     }
 
-    // Filter hanya timestamp dalam window aktif
     entry.timestamps = entry.timestamps.filter((ts) => now - ts < windowMs);
 
     if (entry.timestamps.length >= maxAttempts) {
@@ -98,15 +94,6 @@ export const createRateLimiter = (options?: RateLimiterOptions) => {
   return { check, reset };
 };
 
-// ── Pre-configured limiters ──────────────────────────────────────────
-
-/** Rate limiter untuk login PIN organizer: max 5 percobaan per 15 menit. */
-export const organizerLoginLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  maxAttempts: 5,
-});
-
-/** Rate limiter untuk registrasi event: max 10 registrasi per 15 menit per key. */
 export const registrationLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   maxAttempts: 10,

@@ -3,9 +3,8 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { isOrganizerAuthorized } from "@/lib/organizer-auth";
+import { getPrisma } from "@/lib/prisma";
 import { isHoneypotFilled, stripHtmlTags } from "@/lib/sanitize";
 import { normalizeText, getClientIdentifier } from "@/lib/form-utils";
 import { registrationLimiter } from "@/lib/rate-limiter";
@@ -300,13 +299,6 @@ export const getTicketsByEmail = async (email: string): Promise<TicketLookupItem
     return [];
   }
 
-  const session = await auth();
-  const sessionEmail = session?.user?.email?.toLowerCase();
-
-  if (!sessionEmail || sessionEmail !== attendeeEmail) {
-    return [];
-  }
-
   const prisma = getPrisma();
   const tickets = await prisma.registration.findMany({
     where: {
@@ -438,8 +430,10 @@ export const payRegistration = async (formData: FormData) => {
 };
 
 export const checkInTicket = async (formData: FormData) => {
-  if (!(await isOrganizerAuthorized())) {
-    redirect("/organizer/check-in?auth=required");
+  const session = await auth();
+
+  if (session?.user.role !== UserRole.ORGANIZER) {
+    redirect("/login?callbackUrl=/organizer/check-in");
   }
 
   const ticketCode = normalizeText(formData.get("ticketCode")).toUpperCase();

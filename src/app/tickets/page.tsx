@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { findTicket, getTicketsByEmail } from "@/app/actions/registrations";
 import { SiteHeader } from "@/components/shared/site-header";
-import { auth } from "@/lib/auth";
 import { formatEventDate } from "@/lib/format";
 import { Search, TicketCheck } from "lucide-react";
 
@@ -22,15 +21,12 @@ export const dynamic = "force-dynamic";
 
 export default async function TicketsLookupPage({ searchParams }: TicketsLookupPageProps) {
   const { email, result } = await searchParams;
-  const session = await auth();
   const normalizedEmail = email?.trim().toLowerCase();
-  const sessionEmail = session?.user?.email?.toLowerCase();
-  const canLookupByEmail = Boolean(normalizedEmail && sessionEmail === normalizedEmail);
   let tickets: Awaited<ReturnType<typeof getTicketsByEmail>> = [];
   let databaseError: string | null = null;
 
   try {
-    tickets = canLookupByEmail && normalizedEmail ? await getTicketsByEmail(normalizedEmail) : [];
+    tickets = normalizedEmail ? await getTicketsByEmail(normalizedEmail) : [];
   } catch (error) {
     databaseError = error instanceof Error ? error.message : "Koneksi database gagal.";
   }
@@ -47,8 +43,8 @@ export default async function TicketsLookupPage({ searchParams }: TicketsLookupP
             </p>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">Cari tiket</h1>
             <p className="mt-2 text-sm leading-6 text-stone-600">
-              Gunakan kode tiket jika masih tersimpan. Jika lupa, masukkan email yang dipakai saat
-              registrasi untuk melihat daftar tiket.
+              Pengunjung tidak perlu login. Gunakan kode tiket jika masih tersimpan, atau masukkan
+              email yang dipakai saat registrasi.
             </p>
 
             <form action={findTicket} className="mt-6 rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-sm">
@@ -106,22 +102,8 @@ export default async function TicketsLookupPage({ searchParams }: TicketsLookupP
             ) : null}
             {!email ? (
               <p className="mt-2 text-sm text-stone-600">
-                Masukkan email akun yang sedang login untuk menampilkan tiket Anda.
+                Masukkan email registrasi untuk menampilkan tiket yang pernah dibuat.
               </p>
-            ) : !canLookupByEmail ? (
-              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                <p className="font-semibold">Login diperlukan untuk pencarian via email.</p>
-                <p className="mt-1">
-                  Untuk melindungi tiket peserta, email hanya bisa dipakai oleh pemilik akun yang
-                  sedang login. Kode tiket tetap bisa dibuka langsung jika Anda menyimpannya.
-                </p>
-                <Link
-                  href={`/login?callbackUrl=${encodeURIComponent(`/tickets?email=${normalizedEmail ?? ""}`)}`}
-                  className="mt-3 inline-flex rounded-md bg-stone-950 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-800"
-                >
-                  Login untuk melihat tiket
-                </Link>
-              </div>
             ) : tickets.length === 0 ? (
               <p className="mt-2 text-sm text-stone-600">
                 Tidak ada tiket untuk email <span className="font-medium">{email}</span>.

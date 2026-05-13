@@ -43,7 +43,7 @@ export const SiteHeader = async () => {
               className="ml-2 inline-flex items-center gap-2 rounded-md bg-stone-950 px-4 py-2 text-white shadow-sm hover:bg-stone-800"
             >
               <LogIn className="h-4 w-4" aria-hidden="true" />
-              Login / Daftar
+              Organizer Login
             </Link>
           )}
         </nav>
