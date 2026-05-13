@@ -5,7 +5,8 @@ import { getEventDetailBySlug } from "@/app/actions/events";
 import { registerForEvent } from "@/app/actions/registrations";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatCurrency, formatEventDate } from "@/lib/format";
-import { ArrowLeft, CalendarClock, MapPin, Ticket, Users } from "lucide-react";
+import { formatEventCategory } from "@/lib/event-category";
+import { ArrowLeft, CalendarClock, CheckCircle2, MapPin, ShieldCheck, Ticket, Users } from "lucide-react";
 
 type EventDetailPageProps = {
   params: Promise<{
@@ -73,6 +74,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
   const remainingSeats = Math.max(event.capacity - event.registeredCount, 0);
   const isFreeEvent = Number(event.price) === 0;
+  const isOnlineEvent = event.location.startsWith("http");
 
   return (
     <>
@@ -96,10 +98,18 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 />
               </div>
               <div className="space-y-4">
-                <p className="inline-flex items-center gap-2 rounded-md bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
-                  <CalendarClock className="h-4 w-4" aria-hidden="true" />
-                  {formatEventDate(event.date)} at {event.time}
-                </p>
+                <div className="flex flex-wrap gap-2">
+                  <p className="inline-flex items-center gap-2 rounded-md bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
+                    <CalendarClock className="h-4 w-4" aria-hidden="true" />
+                    {formatEventDate(event.date)} at {event.time}
+                  </p>
+                  <p className="inline-flex items-center rounded-md bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-800">
+                    {formatEventCategory(event.category)}
+                  </p>
+                  <p className="inline-flex items-center rounded-md bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">
+                    {isFreeEvent ? "Gratis" : "Berbayar"}
+                  </p>
+                </div>
                 <h1 className="text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
                   {event.title}
                 </h1>
@@ -126,8 +136,16 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                 </div>
               </div>
             </div>
-            <aside className="h-fit rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-xl lg:sticky lg:top-24">
-              <h2 className="text-lg font-semibold text-stone-950">Daftar event</h2>
+            <aside id="registration" className="scroll-mt-24 h-fit rounded-lg border border-stone-200 bg-[#fffdf8] p-5 shadow-xl lg:sticky lg:top-24">
+              <div className="rounded-lg border border-stone-200 bg-white p-4">
+                <p className="text-sm text-stone-500">Harga tiket</p>
+                <p className="mt-1 text-2xl font-semibold text-stone-950">
+                  {isFreeEvent ? "Gratis" : formatCurrency(event.price)}
+                </p>
+                <p className="mt-1 text-sm text-stone-500">{remainingSeats} kursi tersisa</p>
+              </div>
+
+              <h2 className="mt-5 text-lg font-semibold text-stone-950">Daftar event</h2>
               <p className="mt-1 text-sm text-stone-600">
                 {isFreeEvent
                   ? "Event gratis akan langsung menerbitkan tiket digital."
@@ -180,16 +198,32 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                       : "Lanjut ke pembayaran"}
                 </button>
               </form>
-              <div className="mt-5 border-t border-stone-100 pt-4 text-sm text-stone-600">
+              <div className="mt-5 space-y-3 border-t border-stone-100 pt-4 text-sm text-stone-600">
+                <p className="flex gap-2 font-medium text-stone-950">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" aria-hidden="true" />
+                  <span>Tiket QR digital tersedia setelah registrasi berhasil.</span>
+                </p>
+                <p className="flex gap-2 font-medium text-stone-950">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" aria-hidden="true" />
+                  <span>Check-in diverifikasi oleh organizer di lokasi event.</span>
+                </p>
                 <p className="flex gap-2 font-medium text-stone-950">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{event.location}</span>
+                  <span>{isOnlineEvent ? "Online event" : event.location}</span>
                 </p>
                 <p className="mt-2">Organizer: {event.organizerName}</p>
               </div>
             </aside>
           </div>
         </section>
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 p-3 shadow-[0_-8px_24px_rgba(24,32,29,0.08)] backdrop-blur lg:hidden">
+          <a
+            href="#registration"
+            className="flex items-center justify-center rounded-md bg-stone-950 px-4 py-3 text-sm font-semibold text-white"
+          >
+            {remainingSeats === 0 ? "Kapasitas penuh" : isFreeEvent ? "Daftar gratis" : "Daftar dan bayar"}
+          </a>
+        </div>
       </main>
     </>
   );

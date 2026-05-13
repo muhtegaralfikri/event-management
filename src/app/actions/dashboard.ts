@@ -44,6 +44,7 @@ export const getOrganizerEvents = async () => {
       title: event.title,
       slug: event.slug,
       date: event.date,
+      category: event.category,
       status: event.status,
       totalRegistrants: event._count.registrations,
       paidCount: paidRegs.length,

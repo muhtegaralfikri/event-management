@@ -4,6 +4,7 @@ import { EventCard } from "@/components/ui/event-card";
 import { CalendarCheck, CreditCard, QrCode, Ticket, Search as SearchIcon } from "lucide-react";
 import { EventCategory } from "@/generated/prisma/enums";
 import Link from "next/link";
+import { formatEventCategory } from "@/lib/event-category";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function Home({ searchParams }: Props) {
   const registeredCount = events.reduce((total, event) => total + event.registeredCount, 0);
   const hasActiveFilter = Boolean(search || category !== "ALL");
 
-  const categories = ["ALL", ...Object.values(EventCategory)];
+  const categories: Array<EventCategory | "ALL"> = ["ALL", ...Object.values(EventCategory)];
 
   return (
     <>
@@ -43,15 +44,29 @@ export default async function Home({ searchParams }: Props) {
               <div className="space-y-4">
                 <p className="inline-flex w-fit items-center gap-2 rounded-md border border-teal-700/20 bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
                   <CalendarCheck className="h-4 w-4" aria-hidden="true" />
-                  Event operations platform
+                  Digital ticketing and event check-in
                 </p>
                 <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl lg:text-6xl">
-                  Kelola pendaftaran event tanpa antrean manual.
+                  Temukan event dan dapatkan tiket digital dalam hitungan detik.
                 </h1>
                 <p className="max-w-2xl text-base leading-7 text-stone-600 sm:text-lg">
-                  Peserta menemukan event, mendaftar, membayar bila perlu, lalu menunjukkan tiket QR
-                  untuk check-in di meja organizer.
+                  EventTix membantu peserta mendaftar event dengan cepat, sementara organizer bisa
+                  membuat event, mengelola tiket, dan memvalidasi QR saat check-in.
                 </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="#events"
+                  className="inline-flex items-center justify-center rounded-md bg-stone-950 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-stone-800"
+                >
+                  Lihat Event
+                </Link>
+                <Link
+                  href="/organizer/events/new"
+                  className="inline-flex items-center justify-center rounded-md border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-800 shadow-sm hover:bg-stone-50"
+                >
+                  Buat Event
+                </Link>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
@@ -94,14 +109,14 @@ export default async function Home({ searchParams }: Props) {
                 <QrCode className="h-6 w-6 text-white" aria-hidden="true" />
                 <p className="mt-8 text-sm text-stone-300">Check-in</p>
                 <p className="mt-1 text-lg font-semibold">
-                  Organizer memvalidasi QR dengan mode scanner ber-PIN
+                  Organizer memvalidasi QR lewat scanner yang hanya tersedia setelah login
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
+        <section id="events" className="mx-auto w-full max-w-7xl scroll-mt-24 px-4 py-10 sm:px-6">
           <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight text-stone-950">Event tersedia</h2>
@@ -127,7 +142,7 @@ export default async function Home({ searchParams }: Props) {
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
-                    {c === "ALL" ? "Semua Kategori" : c}
+                    {c === "ALL" ? "Semua Kategori" : formatEventCategory(c)}
                   </option>
                 ))}
               </select>
@@ -160,7 +175,7 @@ export default async function Home({ searchParams }: Props) {
                     : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
                 }`}
               >
-                {c === "ALL" ? "Semua" : c}
+                {c === "ALL" ? "Semua" : formatEventCategory(c)}
               </a>
             ))}
             {hasActiveFilter ? (

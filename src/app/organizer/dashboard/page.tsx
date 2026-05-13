@@ -5,7 +5,8 @@ import { UserRole } from "@/generated/prisma/enums";
 import { getOrganizerEvents } from "@/app/actions/dashboard";
 import { SiteHeader } from "@/components/shared/site-header";
 import { formatCurrency, formatEventDate } from "@/lib/format";
-import { PlusCircle, FileDown, Edit, BarChart3, Users, CheckCircle2, Ticket } from "lucide-react";
+import { PlusCircle, FileDown, Edit, BarChart3, Users, CheckCircle2, Ticket, CalendarDays, QrCode } from "lucide-react";
+import { formatEventCategory } from "@/lib/event-category";
 
 export const metadata = {
   title: "Dashboard Organizer | EventTix",
@@ -24,7 +25,11 @@ export default async function OrganizerDashboard() {
   const totalEvents = events.length;
   const activeEvents = events.filter(e => e.status === "ACTIVE").length;
   const totalRegistrants = events.reduce((sum, e) => sum + e.totalRegistrants, 0);
+  const totalCheckedIn = events.reduce((sum, e) => sum + e.checkedInCount, 0);
   const totalRevenue = events.reduce((sum, e) => sum + e.revenue, 0);
+  const upcomingEvent = events
+    .filter((event) => event.status === "ACTIVE" && event.date >= new Date())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
 
   return (
     <div className="min-h-screen bg-[#fffdf8]">
@@ -41,6 +46,13 @@ export default async function OrganizerDashboard() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link
+              href="/organizer/check-in"
+              className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50"
+            >
+              <QrCode className="h-4 w-4" />
+              Scan Tiket
+            </Link>
             <Link
               href="/organizer/promo/new"
               className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50"
@@ -62,7 +74,7 @@ export default async function OrganizerDashboard() {
         <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2 text-stone-500">
-              <CalendarIcon className="h-4 w-4" />
+              <CalendarDays className="h-4 w-4" />
               <h3 className="text-sm font-medium">Total Event</h3>
             </div>
             <p className="mt-2 text-2xl font-semibold text-stone-950">{totalEvents}</p>
@@ -82,7 +94,7 @@ export default async function OrganizerDashboard() {
               <h3 className="text-sm font-medium">Total Check-in</h3>
             </div>
             <p className="mt-2 text-2xl font-semibold text-stone-950">
-              {events.reduce((sum, e) => sum + e.checkedInCount, 0)}
+              {totalCheckedIn}
             </p>
             <p className="mt-1 text-xs text-stone-500">Peserta hadir</p>
           </div>
@@ -95,6 +107,27 @@ export default async function OrganizerDashboard() {
             <p className="mt-1 text-xs text-stone-500">Estimasi kotor</p>
           </div>
         </div>
+
+        {upcomingEvent ? (
+          <div className="mb-8 rounded-xl border border-teal-100 bg-teal-50/70 p-5 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-teal-800">Event terdekat</p>
+                <h2 className="mt-1 text-lg font-semibold text-stone-950">{upcomingEvent.title}</h2>
+                <p className="mt-1 text-sm text-stone-600">
+                  {formatEventDate(upcomingEvent.date)} · {formatEventCategory(upcomingEvent.category)}
+                </p>
+              </div>
+              <Link
+                href="/organizer/check-in"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800"
+              >
+                <QrCode className="h-4 w-4" />
+                Buka Scanner
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         {/* Events Table */}
         <h2 className="mb-4 text-xl font-semibold text-stone-900">Daftar Event</h2>
@@ -120,6 +153,7 @@ export default async function OrganizerDashboard() {
                 <thead className="border-b border-stone-200 bg-stone-50 text-stone-500">
                   <tr>
                     <th className="px-6 py-4 font-medium">Event</th>
+                    <th className="px-6 py-4 font-medium">Kategori</th>
                     <th className="px-6 py-4 font-medium">Status</th>
                     <th className="px-6 py-4 font-medium">Peserta (Paid)</th>
                     <th className="px-6 py-4 font-medium">Check-in</th>
@@ -133,6 +167,11 @@ export default async function OrganizerDashboard() {
                       <td className="px-6 py-4">
                         <p className="font-medium text-stone-900">{event.title}</p>
                         <p className="text-xs text-stone-500">{formatEventDate(event.date)}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex rounded-md bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700">
+                          {formatEventCategory(event.category)}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${event.status === "ACTIVE" ? "bg-teal-50 text-teal-700" : "bg-red-50 text-red-700"}`}>
@@ -176,27 +215,4 @@ export default async function OrganizerDashboard() {
       </main>
     </div>
   );
-}
-
-// Just a simple icon component fallback
-function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-      <line x1="16" x2="16" y1="2" y2="6" />
-      <line x1="8" x2="8" y1="2" y2="6" />
-      <line x1="3" x2="21" y1="10" y2="10" />
-    </svg>
-  )
 }

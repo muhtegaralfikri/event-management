@@ -19,7 +19,7 @@ export const SiteHeader = async () => {
             width={360}
             height={107}
             priority
-            className="h-10 w-auto"
+            className="h-8 w-auto sm:h-9"
           />
         </Link>
         <nav className="hidden items-center gap-2 text-sm font-medium text-stone-700 lg:flex">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, CalendarClock, MapPin, Users } from "lucide-react";
 import type { EventListItem } from "@/app/actions/events";
 import { formatCurrency, formatEventDate } from "@/lib/format";
+import { formatEventCategory } from "@/lib/event-category";
 
 type EventCardProps = {
   event: EventListItem;
@@ -22,8 +23,13 @@ export const EventCard = ({ event }: EventCardProps) => {
         ) : (
           <div className="h-full w-full bg-[linear-gradient(135deg,#14342f,#0f766e,#d97706)]" />
         )}
+        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          <span className="rounded-md bg-white/95 px-3 py-1 text-xs font-semibold text-stone-950 shadow-sm">
+            {formatEventCategory(event.category)}
+          </span>
+        </div>
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-stone-950/80 to-transparent p-4">
-          <span className="rounded-md bg-white/92 px-3 py-1 text-xs font-semibold uppercase text-stone-950">
+          <span className="rounded-md bg-white/92 px-3 py-1 text-xs font-semibold text-stone-950">
             {isFree ? "Gratis" : "Berbayar"}
           </span>
           <span className="rounded-md bg-stone-950/70 px-3 py-1 text-xs font-medium text-white">
