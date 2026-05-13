@@ -25,6 +25,12 @@ pnpm db:migrate
 pnpm dev
 ```
 
+`pnpm dev` uses webpack for a lighter and more stable local dev server on Windows. To test Turbopack explicitly, use:
+
+```bash
+pnpm dev:turbo
+```
+
 ## Database Commands
 
 ```bash
@@ -32,6 +38,7 @@ pnpm db:generate
 pnpm db:migrate
 pnpm db:deploy
 pnpm db:studio
+pnpm clean
 ```
 
 Use `pnpm db:migrate` for local development and `pnpm db:deploy` for production databases.
