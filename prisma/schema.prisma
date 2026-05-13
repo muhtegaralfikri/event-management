@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  ORGANIZER
+  ATTENDEE
+}
+
+enum RegistrationStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  email         String         @unique
+  password      String?
+  role          UserRole       @default(ATTENDEE)
+  events        Event[]
+  registrations Registration[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model Event {
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String
+  slug          String         @unique
+  description   String
+  date          DateTime
+  time          String
+  location      String
+  price         Decimal        @default(0) @db.Decimal(12, 2)
+  capacity      Int
+  image         String?
+  organizerId   String         @db.Uuid
+  organizer     User           @relation(fields: [organizerId], references: [id], onDelete: Restrict)
+  registrations Registration[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([organizerId])
+  @@index([date])
+  @@map("events")
+}
+
+model Registration {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @db.Uuid
+  eventId    String             @db.Uuid
+  ticketCode String             @unique
+  status     RegistrationStatus @default(PENDING)
+  checkedIn  Boolean            @default(false)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("registrations")
+}
