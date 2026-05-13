@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { SiteFooter } from "@/components/shared/site-footer";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
             <NavigationProgress />
           </Suspense>
           {children}
+          <SiteFooter />
         </SessionProvider>
       </body>
     </html>

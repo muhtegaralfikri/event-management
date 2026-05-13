@@ -44,7 +44,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
               <h1 className="text-2xl font-semibold">Pembayaran belum bisa dimuat</h1>
               <p className="mt-2 text-sm leading-6">
-                Periksa konfigurasi database Vercel sebelum mencoba membuka halaman pembayaran.
+                Coba muat ulang halaman dalam beberapa saat.
               </p>
             </div>
           </section>
@@ -72,7 +72,7 @@ export default async function PaymentPage({ params }: PaymentPageProps) {
               Pembayaran tiket
             </h1>
             <p className="mt-2 text-sm leading-6 text-stone-600">
-              Ini adalah pembayaran simulasi untuk MVP sebelum integrasi Midtrans sandbox.
+              Konfirmasi pembayaran untuk mengaktifkan tiket QR Anda.
             </p>
           </div>
 

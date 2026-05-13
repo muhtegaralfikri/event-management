@@ -45,8 +45,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
               <h1 className="text-2xl font-semibold">Tiket belum bisa dimuat</h1>
               <p className="mt-2 text-sm leading-6">
-                Cek koneksi database di Vercel. Jika tiket ada tetapi database offline, halaman ini
-                tidak bisa mengambil detailnya.
+                Coba muat ulang halaman dalam beberapa saat.
               </p>
             </div>
           </section>
@@ -148,7 +147,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
                     {ticket.ticketCode}
                   </p>
                   <p className="mt-2 text-sm text-stone-600">
-                    Selesaikan pembayaran simulasi agar QR code aktif untuk check-in.
+                    Selesaikan pembayaran agar QR code aktif untuk check-in.
                   </p>
                 </div>
               )}

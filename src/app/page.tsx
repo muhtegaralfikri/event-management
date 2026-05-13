@@ -44,14 +44,14 @@ export default async function Home({ searchParams }: Props) {
               <div className="space-y-4">
                 <p className="inline-flex w-fit items-center gap-2 rounded-md border border-teal-700/20 bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
                   <CalendarCheck className="h-4 w-4" aria-hidden="true" />
-                  Digital ticketing and event check-in
+                  Tiket digital dan check-in QR
                 </p>
                 <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl lg:text-6xl">
                   Temukan event dan dapatkan tiket digital dalam hitungan detik.
                 </h1>
                 <p className="max-w-2xl text-base leading-7 text-stone-600 sm:text-lg">
-                  EventTix membantu peserta mendaftar event dengan cepat, sementara organizer bisa
-                  membuat event, mengelola tiket, dan memvalidasi QR saat check-in.
+                  Cari event, daftar, simpan tiket QR, lalu check-in tanpa antrean manual.
+                  Organizer bisa membuat event dan memvalidasi tiket dari satu tempat.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -87,10 +87,10 @@ export default async function Home({ searchParams }: Props) {
               {databaseError ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                   <p className="font-semibold">Data event belum bisa dimuat.</p>
-                  <p className="mt-1">
-                    Periksa environment Vercel, terutama <code>DATABASE_URL</code> dan koneksi PostgreSQL.
-                  </p>
-                  <p className="mt-1 break-all font-mono text-xs text-amber-900">{databaseError}</p>
+                  <p className="mt-1">Coba muat ulang halaman dalam beberapa saat.</p>
+                  {process.env.NODE_ENV !== "production" ? (
+                    <p className="mt-1 break-all font-mono text-xs text-amber-900">{databaseError}</p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -103,13 +103,13 @@ export default async function Home({ searchParams }: Props) {
               <div className="rounded-lg bg-white/10 p-5">
                 <CreditCard className="h-6 w-6 text-teal-300" aria-hidden="true" />
                 <p className="mt-8 text-sm text-stone-300">Pembayaran</p>
-                <p className="mt-1 text-lg font-semibold">Flow gratis dan berbayar terpisah</p>
+                <p className="mt-1 text-lg font-semibold">Mendukung event gratis dan berbayar</p>
               </div>
               <div className="rounded-lg bg-white/10 p-5 sm:col-span-2">
                 <QrCode className="h-6 w-6 text-white" aria-hidden="true" />
                 <p className="mt-8 text-sm text-stone-300">Check-in</p>
                 <p className="mt-1 text-lg font-semibold">
-                  Organizer memvalidasi QR lewat scanner yang hanya tersedia setelah login
+                  Validasi tiket QR langsung dari meja organizer
                 </p>
               </div>
             </div>
@@ -190,10 +190,9 @@ export default async function Home({ searchParams }: Props) {
 
           {databaseError ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950 shadow-sm">
-              <h3 className="text-lg font-semibold">Database belum terhubung</h3>
+              <h3 className="text-lg font-semibold">Data belum bisa dimuat</h3>
               <p className="mt-2 text-sm leading-6">
-                Halaman ini membutuhkan <code>DATABASE_URL</code> yang valid di Vercel dan database
-                PostgreSQL yang bisa diakses dari internet.
+                Coba muat ulang halaman dalam beberapa saat.
               </p>
             </div>
           ) : events.length > 0 ? (

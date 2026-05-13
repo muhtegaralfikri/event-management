@@ -39,7 +39,7 @@ export default async function TicketsLookupPage({ searchParams }: TicketsLookupP
           <div>
             <p className="inline-flex items-center gap-2 rounded-md bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-900">
               <TicketCheck className="h-4 w-4" aria-hidden="true" />
-              Ticket recovery
+              Temukan tiket
             </p>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">Cari tiket</h1>
             <p className="mt-2 text-sm leading-6 text-stone-600">
@@ -94,10 +94,8 @@ export default async function TicketsLookupPage({ searchParams }: TicketsLookupP
             <h2 className="text-lg font-semibold text-stone-950">Hasil pencarian</h2>
             {databaseError ? (
               <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                <p className="font-semibold">Database belum terhubung.</p>
-                <p className="mt-1">
-                  Pastikan environment Vercel memiliki <code>DATABASE_URL</code> yang benar.
-                </p>
+                <p className="font-semibold">Tiket belum bisa dimuat.</p>
+                <p className="mt-1">Coba muat ulang halaman dalam beberapa saat.</p>
               </div>
             ) : null}
             {!email ? (

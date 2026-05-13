@@ -22,13 +22,14 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
             <div>
               <h1 className="text-2xl font-semibold">Halaman gagal dimuat</h1>
               <p className="mt-2 text-sm leading-6 text-stone-700">
-                Biasanya ini terjadi karena environment Vercel belum berisi{" "}
-                <code>DATABASE_URL</code> atau database PostgreSQL tidak bisa diakses.
+                Ada kendala saat memuat halaman. Coba ulangi dalam beberapa saat.
               </p>
             </div>
-            <p className="break-all rounded-md bg-white/70 px-3 py-2 font-mono text-xs text-stone-700">
-              {error.digest ? `digest: ${error.digest}` : error.message}
-            </p>
+            {process.env.NODE_ENV !== "production" ? (
+              <p className="break-all rounded-md bg-white/70 px-3 py-2 font-mono text-xs text-stone-700">
+                {error.digest ? `digest: ${error.digest}` : error.message}
+              </p>
+            ) : null}
             <button
               type="button"
               onClick={() => reset()}

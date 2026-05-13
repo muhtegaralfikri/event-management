@@ -62,8 +62,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
               <h1 className="text-2xl font-semibold">Detail event belum bisa dimuat</h1>
               <p className="mt-2 text-sm leading-6">
-                Cek koneksi database di Vercel. Jika <code>DATABASE_URL</code> tidak tersedia atau
-                database tidak bisa diakses, halaman ini akan berhenti di sini.
+                Coba muat ulang halaman dalam beberapa saat.
               </p>
             </div>
           </section>
@@ -149,7 +148,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               <p className="mt-1 text-sm text-stone-600">
                 {isFreeEvent
                   ? "Event gratis akan langsung menerbitkan tiket digital."
-                  : "Event berbayar akan masuk ke pembayaran simulasi sebelum tiket aktif."}
+                  : "Event berbayar perlu diselesaikan pembayarannya sebelum tiket aktif."}
               </p>
               <form action={registerForEvent} className="mt-5 space-y-4">
                 <input type="hidden" name="eventId" value={event.id} />
@@ -211,7 +210,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <span>{isOnlineEvent ? "Online event" : event.location}</span>
                 </p>
-                <p className="mt-2">Organizer: {event.organizerName}</p>
+                <p className="mt-2">Diselenggarakan oleh {event.organizerName}</p>
               </div>
             </aside>
           </div>

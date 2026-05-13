@@ -13,13 +13,53 @@ type CheckInScannerProps = {
 };
 
 const scannerElementId = "eventtix-check-in-scanner";
+type AudioWindow = Window & typeof globalThis & {
+  webkitAudioContext?: typeof AudioContext;
+};
 
 export const CheckInScanner = ({ action }: CheckInScannerProps) => {
   const formRef = useRef<HTMLFormElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const [ticketCode, setTicketCode] = useState("");
   const [message, setMessage] = useState("Klik mulai scan untuk membuka kamera.");
   const [isScanning, setIsScanning] = useState(false);
+
+  const playScanFeedback = () => {
+    if ("vibrate" in navigator) {
+      navigator.vibrate(80);
+    }
+
+    try {
+      const audioWindow = window as AudioWindow;
+      const AudioContextClass = audioWindow.AudioContext || audioWindow.webkitAudioContext;
+
+      if (!AudioContextClass) {
+        return;
+      }
+
+      const audioContext = audioContextRef.current ?? new AudioContextClass();
+      audioContextRef.current = audioContext;
+
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, now);
+      oscillator.frequency.setValueAtTime(1046, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.18);
+    } catch {
+      // Audio feedback is optional; scanner flow should keep working if blocked.
+    }
+  };
 
   const stopScanner = async () => {
     const scanner = scannerRef.current;
@@ -81,7 +121,8 @@ export const CheckInScanner = ({ action }: CheckInScannerProps) => {
           }
 
           setTicketCode(code);
-          setMessage(`Kode terbaca: ${code}`);
+          setMessage(`Kode terbaca: ${code}. Memvalidasi tiket...`);
+          playScanFeedback();
           void stopScanner();
           window.setTimeout(() => formRef.current?.requestSubmit(), 150);
         },
