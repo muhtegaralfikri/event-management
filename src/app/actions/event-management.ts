@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { UserRole, EventStatus } from "@/generated/prisma/enums";
+import { UserRole, EventCategory, EventStatus } from "@/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 
 import { normalizeText, normalizeOptionalText } from "@/lib/form-utils";
@@ -53,10 +53,16 @@ export const updateEvent = async (eventId: string, formData: FormData) => {
   const location = normalizeText(formData.get("location"));
   const priceStr = normalizeText(formData.get("price"));
   const capacityStr = normalizeText(formData.get("capacity"));
+  const categoryValue = normalizeText(formData.get("category"));
   const image = normalizeOptionalText(formData.get("image"));
 
-  if (!title || !description || !dateStr || !time || !location || !capacityStr) {
+  if (!title || !description || !dateStr || !time || !location || !capacityStr || !categoryValue) {
     throw new Error("Semua field wajib diisi");
+  }
+
+  const category = categoryValue as EventCategory;
+  if (!Object.values(EventCategory).includes(category)) {
+    throw new Error("Kategori tidak valid");
   }
 
   const date = new Date(dateStr);
@@ -96,6 +102,7 @@ export const updateEvent = async (eventId: string, formData: FormData) => {
       date,
       time,
       location,
+      category,
       price,
       capacity,
       image,

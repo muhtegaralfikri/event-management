@@ -1,15 +1,27 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { UserRole } from "@/generated/prisma/enums";
+import { EventCategory, UserRole } from "@/generated/prisma/enums";
 import { SiteHeader } from "@/components/shared/site-header";
 import { updateEvent } from "@/app/actions/event-management";
 import { InputField } from "@/components/ui/input-field";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { format } from "date-fns";
 
 export const metadata = {
   title: "Edit Event | EventTix",
 };
+
+const eventCategories = [
+  { value: EventCategory.TECHNOLOGY, label: "Technology" },
+  { value: EventCategory.BUSINESS, label: "Business" },
+  { value: EventCategory.DESIGN, label: "Design" },
+  { value: EventCategory.COMMUNITY, label: "Community" },
+  { value: EventCategory.WORKSHOP, label: "Workshop" },
+  { value: EventCategory.SEMINAR, label: "Seminar" },
+  { value: EventCategory.NETWORKING, label: "Networking" },
+  { value: EventCategory.OTHER, label: "Other" },
+];
 
 export default async function EditEventPage({
   params,
@@ -107,6 +119,22 @@ export default async function EditEventPage({
               />
             </div>
 
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-stone-700">Kategori Event</label>
+              <select
+                name="category"
+                defaultValue={event.category}
+                required
+                className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none focus:border-teal-700 focus:ring-1 focus:ring-teal-700"
+              >
+                {eventCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <InputField
               label="Harga Tiket (Rp)"
               name="price"
@@ -147,12 +175,12 @@ export default async function EditEventPage({
             >
               Batal
             </a>
-            <button
-              type="submit"
-              className="rounded-md bg-teal-700 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+            <SubmitButton
+              pendingText="Menyimpan..."
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-75"
             >
               Simpan Perubahan
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </main>
