@@ -48,9 +48,18 @@ export const SiteFooter = () => (
           </Link>
         </nav>
       </div>
+
+      <nav className="flex flex-wrap gap-4 text-sm text-stone-600 lg:col-span-3">
+        <Link href="/privacy" className="hover:text-teal-800">
+          Kebijakan Privasi
+        </Link>
+        <Link href="/terms" className="hover:text-teal-800">
+          Syarat Layanan
+        </Link>
+      </nav>
     </div>
     <div className="border-t border-stone-200 px-4 py-4 text-center text-xs text-stone-500 sm:px-6">
-      © {new Date().getFullYear()} EventTix. Tiket digital untuk event yang lebih rapi.
+      &copy; {new Date().getFullYear()} EventTix. Tiket digital untuk event yang lebih rapi.
     </div>
   </footer>
 );
