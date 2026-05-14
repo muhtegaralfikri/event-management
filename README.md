@@ -1,10 +1,30 @@
+<p align="center">
+  <img src="./public/eventtix-logo.png" alt="EventTix" width="240" />
+</p>
+
 # EventTix
 
 EventTix adalah proyek portfolio full-stack untuk platform manajemen event dan tiket digital. Aplikasi ini menampilkan alur publik untuk mencari event, mendaftar tanpa akun, mendapatkan tiket QR, serta alur organizer untuk membuat event, check-in peserta, dan export data peserta.
 
-## Status
+> Status: MVP portfolio dan demo teknis. Belum diposisikan sebagai SaaS production penuh karena payment gateway asli, email production, monitoring, backup, dan legal final belum diintegrasikan.
 
-Proyek ini layak sebagai MVP portfolio dan demo teknis. Untuk penggunaan production komersial, beberapa bagian masih perlu integrasi pihak ketiga dan hardening tambahan, terutama payment gateway asli, email production, monitoring, backup, dan legal final.
+## Preview
+
+### Homepage
+
+![Homepage EventTix](./public/screenshots/home.png)
+
+### Detail Event
+
+![Detail Event EventTix](./public/screenshots/event-detail.png)
+
+### Dashboard Organizer
+
+![Dashboard Organizer EventTix](./public/screenshots/dashboard.png)
+
+### Check-in Scanner
+
+![Check-in Scanner EventTix](./public/screenshots/check-in.png)
 
 ## Fitur Utama
 
@@ -60,6 +80,7 @@ Run migrations and start the app:
 
 ```bash
 pnpm db:migrate
+pnpm db:seed-events
 pnpm dev
 ```
 
